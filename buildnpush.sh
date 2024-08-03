@@ -1,0 +1,1 @@
+docker build --platform=linux/amd64  . -t oui && docker image tag oui reg.prtl.cc/shapiroisme/oui:latest && docker image push reg.prtl.cc/shapiroisme/oui:latest
