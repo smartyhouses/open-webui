@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Initialize device type args
 # use build args in the docker build commmand with --build-arg="BUILDARG=true"
 ARG USE_CUDA=false
@@ -17,7 +16,7 @@ ARG UID=0
 ARG GID=0
 
 ######## WebUI frontend ########
-FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
+FROM --platform=$BUILDPLATFORM dockerhub.timeweb.cloud/node:22-alpine3.20 AS build
 ARG BUILD_HASH
 
 WORKDIR /app
@@ -27,10 +26,24 @@ RUN npm ci
 
 COPY . .
 ENV APP_BUILD_HASH=${BUILD_HASH}
+ARG NODE_OPTIONS=--max_old_space_size=8912
+ENV NODE_OPTIONS=--max_old_space_size=8912
+
 RUN npm run build
 
 ######## WebUI backend ########
-FROM python:3.11-slim-bookworm AS base
+FROM dockerhub.timeweb.cloud/python:3.11-slim-bookworm as base
+
+#RUN echo 'deb http://mirror.yandex.ru/debian/ bookworm main contrib non-free non-free-firmware\n\
+#deb-src http://mirror.yandex.ru/debian/ bookworm main contrib non-free non-free-firmware\n\
+#deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware\n\
+#deb-src http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware\n\
+#deb http://mirror.yandex.ru/debian/ bookworm-updates main contrib non-free non-free-firmware\n\
+#deb-src http://mirror.yandex.ru/debian/ bookworm-updates main contrib non-free-non free firmware' > /etc/apt/sources.list && \
+#apt-get update -y
+
+######## WebUI backend ########
+FROM dockerhub.timeweb.cloud/python:3.11-slim-bookworm AS base
 
 # Use args
 ARG USE_CUDA
@@ -42,7 +55,7 @@ ARG UID
 ARG GID
 
 ## Basis ##
-ENV ENV=prod \
+ENV ENV=prod UV_HTTP_TIMEOUT=99999 \
     PORT=8080 \
     # pass build args to the build
     USE_OLLAMA_DOCKER=${USE_OLLAMA} \
@@ -50,7 +63,8 @@ ENV ENV=prod \
     USE_CUDA_DOCKER_VER=${USE_CUDA_VER} \
     USE_EMBEDDING_MODEL_DOCKER=${USE_EMBEDDING_MODEL} \
     USE_RERANKING_MODEL_DOCKER=${USE_RERANKING_MODEL}
-
+    
+ENV NODE_OPTIONS=--max_old_space_size=8912
 ## Basis URL Config ##
 ENV OLLAMA_BASE_URL="/ollama" \
     OPENAI_API_BASE_URL=""
