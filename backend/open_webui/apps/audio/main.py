@@ -44,6 +44,10 @@ MAX_FILE_SIZE_MB = 25
 MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024  # Convert MB to bytes
 
 
+
+import edge_tts
+voice_id="ru-RU-SvetlanaNeural"
+
 log = logging.getLogger(__name__)
 log.setLevel(SRC_LOG_LEVELS["AUDIO"])
 
@@ -198,6 +202,21 @@ async def update_audio_config(
     }
 
 
+
+
+def detect_language(text):
+    russian_chars = sum(1 for char in text if 'а' <= char <= 'я' or 'А' <= char <= 'Я')
+    english_chars = sum(1 for char in text if 'a' <= char <= 'z' or 'A' <= char <= 'Z')
+
+    if russian_chars > english_chars:
+        return "ru"
+    elif english_chars > russian_chars:
+        return "en"
+    else:
+        return "na"
+
+
+
 @app.post("/speech")
 async def speech(request: Request, user=Depends(get_verified_user)):
     body = await request.body()
@@ -263,43 +282,34 @@ async def speech(request: Request, user=Depends(get_verified_user)):
 
     elif app.state.config.TTS_ENGINE == "elevenlabs":
         payload = None
+        
         try:
             payload = json.loads(body.decode("utf-8"))
         except Exception as e:
             log.exception(e)
             raise HTTPException(status_code=400, detail="Invalid JSON payload")
 
-        voice_id = payload.get("voice", "")
+        voice_id="ru-RU-SvetlanaNeural"
+        if detect_language(payload["input"]) == "en":
+            voice_id="en-US-JennyNeural"
+        else:
+            voice_id="ru-RU-SvetlanaNeural"
 
-        if voice_id not in get_available_voices():
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid voice id",
-            )
-
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-
-        headers = {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": app.state.config.TTS_API_KEY,
-        }
-
+        
         data = {
             "text": payload["input"],
             "model_id": app.state.config.TTS_MODEL,
             "voice_settings": {"stability": 0.5, "similarity_boost": 0.5},
-        }
+         }
 
         try:
-            r = requests.post(url, json=data, headers=headers)
-
-            r.raise_for_status()
-
-            # Save the streaming content to a file
-            with open(file_path, "wb") as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
+            communicate = edge_tts.Communicate(payload["input"], voice_id)
+            with open(file_path, "wb") as file:
+                for chunk in communicate.stream_sync():
+                    if chunk["type"] == "audio":
+                        file.write(chunk["data"])
+                    elif chunk["type"] == "WordBoundary":
+                        print(f"WordBoundary: {chunk}")
 
             with open(file_body_path, "w") as f:
                 json.dump(json.loads(body.decode("utf-8")), f)
@@ -309,7 +319,7 @@ async def speech(request: Request, user=Depends(get_verified_user)):
 
         except Exception as e:
             log.exception(e)
-            error_detail = "Open WebUI: Server Connection Error"
+            error_detail = "Portal: Server Connection Error"
             if r is not None:
                 try:
                     res = r.json()
@@ -535,7 +545,7 @@ def get_available_models() -> list[dict]:
 
         try:
             response = requests.get(
-                "https://api.elevenlabs.io/v1/models", headers=headers, timeout=5
+                "https://prtl.cc/v1/models", headers=headers, timeout=5
             )
             response.raise_for_status()
             models = response.json()
