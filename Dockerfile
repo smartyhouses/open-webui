@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Initialize device type args
 # use build args in the docker build command with --build-arg="BUILDARG=true"
 ARG USE_CUDA=false
@@ -21,7 +20,7 @@ ARG UID=0
 ARG GID=0
 
 ######## WebUI frontend ########
-FROM --platform=$BUILDPLATFORM node:22-alpine3.20 AS build
+FROM --platform=$BUILDPLATFORM dockerhub.timeweb.cloud/node:22-alpine3.20 AS build
 ARG BUILD_HASH
 
 WORKDIR /app
@@ -34,7 +33,7 @@ ENV APP_BUILD_HASH=${BUILD_HASH}
 RUN npm run build
 
 ######## WebUI backend ########
-FROM python:3.11-slim-bookworm AS base
+FROM dockerhub.timeweb.cloud/python:3.11-slim-bookworm AS base
 
 # Use args
 ARG USE_CUDA
@@ -46,7 +45,7 @@ ARG UID
 ARG GID
 
 ## Basis ##
-ENV ENV=prod \
+ENV ENV=prod UV_HTTP_TIMEOUT=99999 \
     PORT=8080 \
     # pass build args to the build
     USE_OLLAMA_DOCKER=${USE_OLLAMA} \
