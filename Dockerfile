@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Initialize device type args
 # use build args in the docker build command with --build-arg="BUILDARG=true"
 ARG USE_CUDA=false
@@ -25,6 +24,9 @@ FROM --platform=$BUILDPLATFORM dockerhub.timeweb.cloud/node:22-alpine3.20 AS bui
 ARG BUILD_HASH
 
 WORKDIR /app
+
+ARG NODE_OPTIONS=--max_old_space_size=8912
+ENV NODE_OPTIONS=--max_old_space_size=8912
 
 COPY package.json package-lock.json ./
 RUN npm ci
