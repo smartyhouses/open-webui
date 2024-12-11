@@ -26,6 +26,10 @@ ARG BUILD_HASH
 
 WORKDIR /app
 
+ARG NODE_OPTIONS=--max_old_space_size=8912
+ENV NODE_OPTIONS=--max_old_space_size=8912
+
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
