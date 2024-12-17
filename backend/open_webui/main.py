@@ -27,8 +27,10 @@ from fastapi import (
     Request,
     UploadFile,
     status,
+    applications
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -96,6 +98,7 @@ from open_webui.config import (
     AUTOMATIC1111_SAMPLER,
     AUTOMATIC1111_SCHEDULER,
     COMFYUI_BASE_URL,
+    COMFYUI_API_KEY,
     COMFYUI_WORKFLOW,
     COMFYUI_WORKFLOW_NODES,
     ENABLE_IMAGE_GENERATION,
@@ -557,6 +560,7 @@ app.state.config.AUTOMATIC1111_CFG_SCALE = AUTOMATIC1111_CFG_SCALE
 app.state.config.AUTOMATIC1111_SAMPLER = AUTOMATIC1111_SAMPLER
 app.state.config.AUTOMATIC1111_SCHEDULER = AUTOMATIC1111_SCHEDULER
 app.state.config.COMFYUI_BASE_URL = COMFYUI_BASE_URL
+app.state.config.COMFYUI_API_KEY = COMFYUI_API_KEY
 app.state.config.COMFYUI_WORKFLOW = COMFYUI_WORKFLOW
 app.state.config.COMFYUI_WORKFLOW_NODES = COMFYUI_WORKFLOW_NODES
 
@@ -1103,6 +1107,15 @@ async def healthcheck_with_db():
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/cache", StaticFiles(directory=CACHE_DIR), name="cache")
+def swagger_monkey_patch(*args, **kwargs):
+    return get_swagger_ui_html(
+        *args,
+        **kwargs,
+        swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui/swagger-ui.css",
+        swagger_favicon_url="/static/swagger-ui/favicon.png"
+    )
+applications.get_swagger_ui_html = swagger_monkey_patch
 
 if os.path.exists(FRONTEND_BUILD_DIR):
     mimetypes.add_type("text/javascript", ".js")
