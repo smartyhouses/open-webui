@@ -18,6 +18,8 @@ from typing import Optional
 from aiocache import cached
 import aiohttp
 import requests
+
+
 from fastapi import (
     Depends,
     FastAPI,
@@ -27,10 +29,11 @@ from fastapi import (
     Request,
     UploadFile,
     status,
-    applications
+    applications,
 )
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
+
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -1107,15 +1110,19 @@ async def healthcheck_with_db():
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/cache", StaticFiles(directory=CACHE_DIR), name="cache")
-def swagger_monkey_patch(*args, **kwargs):
+
+
+def swagger_ui_html(*args, **kwargs):
     return get_swagger_ui_html(
         *args,
         **kwargs,
         swagger_js_url="/static/swagger-ui/swagger-ui-bundle.js",
         swagger_css_url="/static/swagger-ui/swagger-ui.css",
-        swagger_favicon_url="/static/swagger-ui/favicon.png"
+        swagger_favicon_url="/static/swagger-ui/favicon.png",
     )
-applications.get_swagger_ui_html = swagger_monkey_patch
+
+
+applications.get_swagger_ui_html = swagger_ui_html
 
 if os.path.exists(FRONTEND_BUILD_DIR):
     mimetypes.add_type("text/javascript", ".js")
