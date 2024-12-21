@@ -1,4 +1,4 @@
-import { OPENAI_API_BASE_URL } from '$lib/constants';
+import { OPENAI_API_BASE_URL, WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 
 export const getOpenAIConfig = async (token: string = '') => {
 	let error = null;
@@ -273,10 +273,42 @@ export const verifyOpenAIConnection = async (
 	return res;
 };
 
+
+export const chatCompletion = async (
+	token: string = '',
+	body: object,
+	url: string = `${WEBUI_BASE_URL}/api`
+): Promise<[Response | null, AbortController]> => {
+	const controller = new AbortController();
+	let error = null;
+
+	const res = await fetch(`${url}/chat/completions`, {
+		signal: controller.signal,
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${token}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(body)
+	}).catch((err) => {
+		console.log(err);
+		error = err;
+		return null;
+	});
+
+	if (error) {
+		throw error;
+	}
+
+	return [res, controller];
+};
+
+
+
 export const generateOpenAIChatCompletion = async (
 	token: string = '',
 	body: object,
-	url: string = OPENAI_API_BASE_URL
+	url: string = `${WEBUI_BASE_URL}/api`
 ) => {
 	let error = null;
 

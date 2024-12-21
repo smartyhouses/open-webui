@@ -118,6 +118,8 @@
 	export let continueResponse: Function;
 	export let regenerateResponse: Function;
 
+	export let addMessages: Function;
+
 	export let isLastMessage = true;
 	export let readOnly = false;
 
@@ -620,6 +622,7 @@
 									<!-- unless message.error === true which is legacy error handling, where the error message is stored in message.content -->
 									<ContentRenderer
 										id={message.id}
+										{history}
 										content={message.content}
 										sources={message.sources}
 										floatingButtons={message?.done}
@@ -632,6 +635,9 @@
 											if (sourceButton) {
 												sourceButton.click();
 											}
+										}}
+										onAddMessages={({ modelId, parentId, messages }) => {
+											addMessages({ modelId, parentId, messages });
 										}}
 										on:update={(e) => {
 											const { raw, oldContent, newContent } = e.detail;

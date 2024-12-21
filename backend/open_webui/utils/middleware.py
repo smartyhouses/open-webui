@@ -18,15 +18,18 @@ from starlette.responses import Response, StreamingResponse
 
 
 from open_webui.models.chats import Chats
+from open_webui.models.users import Users
 from open_webui.socket.main import (
     get_event_call,
     get_event_emitter,
+    get_user_id_from_session_pool,
 )
 from open_webui.routers.tasks import (
     generate_queries,
     generate_title,
     generate_chat_tags,
 )
+from open_webui.utils.webhook import post_webhook
 
 
 from open_webui.models.users import UserModel
@@ -55,7 +58,12 @@ from open_webui.utils.plugin import load_function_module_by_id
 from open_webui.tasks import create_task
 
 from open_webui.config import DEFAULT_TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE
-from open_webui.env import SRC_LOG_LEVELS, GLOBAL_LOG_LEVEL, BYPASS_MODEL_ACCESS_CONTROL
+from open_webui.env import (
+    SRC_LOG_LEVELS,
+    GLOBAL_LOG_LEVEL,
+    BYPASS_MODEL_ACCESS_CONTROL,
+    WEBUI_URL,
+)
 from open_webui.constants import TASKS
 
 
@@ -528,7 +536,14 @@ async def process_chat_response(request, response, user, events, metadata, tasks
         return response
 
     event_emitter = None
-    if "session_id" in metadata:
+    if (
+        "session_id" in metadata
+        and metadata["session_id"]
+        and "chat_id" in metadata
+        and metadata["chat_id"]
+        and "message_id" in metadata
+        and metadata["message_id"]
+    ):
         event_emitter = get_event_emitter(metadata)
 
     if event_emitter:
@@ -586,6 +601,26 @@ async def process_chat_response(request, response, user, events, metadata, tasks
 
                         if done:
                             data = {"done": True, "content": content, "title": title}
+
+                            # Send a webhook notification if the user is not active
+                            if (
+                                get_user_id_from_session_pool(metadata["session_id"])
+                                is None
+                            ):
+                                webhook_url = Users.get_user_webhook_url_by_id(user.id)
+                                webui_url = f"{request.headers.get('x-forwarded-proto', request.url.scheme)}://{request.headers.get('x-forwarded-host', f'{request.client.host}:{request.url.port}')}"
+                                if webhook_url:
+                                    post_webhook(
+                                        webhook_url,
+                                        f"{title} - {webui_url}/c/{metadata['chat_id']}\n\n{content}",
+                                        {
+                                            "action": "chat",
+                                            "message": content,
+                                            "title": title,
+                                            "url": f"{webui_url}/c/{metadata['chat_id']}",
+                                        },
+                                    )
+
                         else:
                             continue
 
@@ -701,6 +736,7 @@ async def process_chat_response(request, response, user, events, metadata, tasks
         return {"status": True, "task_id": task_id}
 
     else:
+
         # Fallback to the original response
         async def stream_wrapper(original_generator, events):
             def wrap_item(item):

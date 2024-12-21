@@ -985,6 +985,69 @@
 		}
 	};
 
+	const addMessages = async ({ modelId, parentId, messages }) => {
+		const model = $models.filter((m) => m.id === modelId).at(0);
+
+		let parentMessage = history.messages[parentId];
+		let currentParentId = parentMessage ? parentMessage.id : null;
+		for (const message of messages) {
+			let messageId = uuidv4();
+
+			if (message.role === 'user') {
+				const userMessage = {
+					id: messageId,
+					parentId: currentParentId,
+					childrenIds: [],
+					timestamp: Math.floor(Date.now() / 1000),
+					...message
+				};
+
+				if (parentMessage) {
+					parentMessage.childrenIds.push(messageId);
+					history.messages[parentMessage.id] = parentMessage;
+				}
+
+				history.messages[messageId] = userMessage;
+				parentMessage = userMessage;
+				currentParentId = messageId;
+			} else {
+				const responseMessage = {
+					id: messageId,
+					parentId: currentParentId,
+					childrenIds: [],
+					done: true,
+					model: model.id,
+					modelName: model.name ?? model.id,
+					modelIdx: 0,
+					timestamp: Math.floor(Date.now() / 1000),
+					...message
+				};
+
+				if (parentMessage) {
+					parentMessage.childrenIds.push(messageId);
+					history.messages[parentMessage.id] = parentMessage;
+				}
+
+				history.messages[messageId] = responseMessage;
+				parentMessage = responseMessage;
+				currentParentId = messageId;
+			}
+		}
+
+		history.currentId = currentParentId;
+		await tick();
+
+		if (autoScroll) {
+			scrollToBottom();
+		}
+
+		if (messages.length === 0) {
+			await initChatHandler();
+		} else {
+			await saveChatHandler($chatId);
+		}
+	};
+
 	const chatCompletionEventHandler = async (data, message, chatId) => {
 		const { id, done, choices, sources, selectedModelId, error, usage } = data;
 
@@ -1937,6 +2000,7 @@
 									{regenerateResponse}
 									{mergeResponses}
 									{chatActionHandler}
+									{addMessages}
 									bottomPadding={files.length > 0}
 								/>
 							</div>
