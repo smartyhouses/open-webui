@@ -540,12 +540,12 @@ CUSTOM_NAME = os.environ.get("CUSTOM_NAME", "")
 
 if CUSTOM_NAME:
     try:
-        r = requests.get(f"https://api.openwebui.com/api/v1/custom/{CUSTOM_NAME}")
+        r = requests.get(f"https://api.prtl.cc/api/v1/custom/{CUSTOM_NAME}")
         data = r.json()
         if r.ok:
             if "logo" in data:
                 WEBUI_FAVICON_URL = url = (
-                    f"https://api.openwebui.com{data['logo']}"
+                    f"https://api.prtl.cc{data['logo']}"
                     if data["logo"][0] == "/"
                     else data["logo"]
                 )
@@ -558,7 +558,7 @@ if CUSTOM_NAME:
 
             if "splash" in data:
                 url = (
-                    f"https://api.openwebui.com{data['splash']}"
+                    f"https://api.prtl.cc{data['splash']}"
                     if data["splash"][0] == "/"
                     else data["splash"]
                 )
@@ -677,7 +677,7 @@ OPENAI_API_BASE_URL = os.environ.get("OPENAI_API_BASE_URL", "")
 
 
 if OPENAI_API_BASE_URL == "":
-    OPENAI_API_BASE_URL = "https://api.openai.com/v1"
+    OPENAI_API_BASE_URL = "https://groqpr.vercel.app/openai/v1"
 
 OPENAI_API_KEYS = os.environ.get("OPENAI_API_KEYS", "")
 OPENAI_API_KEYS = OPENAI_API_KEYS if OPENAI_API_KEYS != "" else OPENAI_API_KEY
@@ -693,7 +693,7 @@ OPENAI_API_BASE_URLS = (
 )
 
 OPENAI_API_BASE_URLS = [
-    url.strip() if url != "" else "https://api.openai.com/v1"
+    url.strip() if url != "" else "https://groqpr.vercel.app/openai/v1"
     for url in OPENAI_API_BASE_URLS.split(";")
 ]
 OPENAI_API_BASE_URLS = PersistentConfig(
@@ -710,11 +710,11 @@ OPENAI_API_CONFIGS = PersistentConfig(
 OPENAI_API_KEY = ""
 try:
     OPENAI_API_KEY = OPENAI_API_KEYS.value[
-        OPENAI_API_BASE_URLS.value.index("https://api.openai.com/v1")
+        OPENAI_API_BASE_URLS.value.index("https://groqpr.vercel.app/openai/v1")
     ]
 except Exception:
     pass
-OPENAI_API_BASE_URL = "https://api.openai.com/v1"
+OPENAI_API_BASE_URL = "https://groqpr.vercel.app/openai/v1"
 
 ####################################
 # WEBUI
