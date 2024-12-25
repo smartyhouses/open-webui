@@ -3,11 +3,11 @@ import logging
 from typing import Optional
 
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status, BackgroundTasks
 from pydantic import BaseModel
 
 
-from open_webui.socket.main import sio
+from open_webui.socket.main import sio, get_user_ids_from_room
 from open_webui.models.users import Users, UserNameResponse
 
 from open_webui.models.channels import Channels, ChannelModel, ChannelForm
@@ -20,7 +20,8 @@ from open_webui.env import SRC_LOG_LEVELS
 
 
 from open_webui.utils.auth import get_admin_user, get_verified_user
-from open_webui.utils.access_control import has_access
+from open_webui.utils.access_control import has_access, get_users_with_access
+from open_webui.utils.webhook import post_webhook
 
 log = logging.getLogger(__name__)
 log.setLevel(SRC_LOG_LEVELS["MODELS"])
@@ -180,9 +181,38 @@ async def get_channel_messages(
 ############################
 
 
+async def send_notification(webui_url, channel, message, active_user_ids):
+    users = get_users_with_access("read", channel.access_control)
+
+    for user in users:
+        if user.id in active_user_ids:
+            continue
+        else:
+            if user.settings:
+                webhook_url = user.settings.ui.get("notifications", {}).get(
+                    "webhook_url", None
+                )
+
+                if webhook_url:
+                    post_webhook(
+                        webhook_url,
+                        f"#{channel.name} - {webui_url}/channels/{channel.id}\n\n{message.content}",
+                        {
+                            "action": "channel",
+                            "message": message.content,
+                            "title": channel.name,
+                            "url": f"{webui_url}/channels/{channel.id}",
+                        },
+                    )
+
+
 @router.post("/{id}/messages/post", response_model=Optional[MessageModel])
 async def post_new_message(
-    id: str, form_data: MessageForm, user=Depends(get_verified_user)
+    request: Request,
+    id: str,
+    form_data: MessageForm,
+    background_tasks: BackgroundTasks,
+    user=Depends(get_verified_user),
 ):
     channel = Channels.get_channel_by_id(id)
     if not channel:
@@ -201,20 +231,34 @@ async def post_new_message(
         message = Messages.insert_new_message(form_data, channel.id, user.id)
 
         if message:
-            await sio.emit(
-                "channel-events",
-                {
-                    "channel_id": channel.id,
-                    "message_id": message.id,
+            event_data = {
+                "channel_id": channel.id,
+                "message_id": message.id,
+                "data": {
+                    "type": "message",
                     "data": {
-                        "type": "message",
-                        "data": {
-                            **message.model_dump(),
-                            "user": UserNameResponse(**user.model_dump()).model_dump(),
-                        },
+                        **message.model_dump(),
+                        "user": UserNameResponse(**user.model_dump()).model_dump(),
                     },
                 },
+                "user": UserNameResponse(**user.model_dump()).model_dump(),
+                "channel": channel.model_dump(),
+            }
+
+            await sio.emit(
+                "channel-events",
+                event_data,
                 to=f"channel:{channel.id}",
+            )
+
+            active_user_ids = get_user_ids_from_room(f"channel:{channel.id}")
+
+            background_tasks.add_task(
+                send_notification,
+                request.app.state.config.WEBUI_URL,
+                channel,
+                message,
+                active_user_ids,
             )
 
         return MessageModel(**message.model_dump())
@@ -275,6 +319,8 @@ async def update_message_by_id(
                             "user": UserNameResponse(**user.model_dump()).model_dump(),
                         },
                     },
+                    "user": UserNameResponse(**user.model_dump()).model_dump(),
+                    "channel": channel.model_dump(),
                 },
                 to=f"channel:{channel.id}",
             )
@@ -334,6 +380,8 @@ async def delete_message_by_id(
                         "user": UserNameResponse(**user.model_dump()).model_dump(),
                     },
                 },
+                "user": UserNameResponse(**user.model_dump()).model_dump(),
+                "channel": channel.model_dump(),
             },
             to=f"channel:{channel.id}",
         )

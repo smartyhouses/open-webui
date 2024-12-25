@@ -2,7 +2,7 @@
 	import { toast } from 'svelte-sonner';
 	import { onDestroy, onMount, tick } from 'svelte';
 
-	import { showSidebar, socket } from '$lib/stores';
+	import { chatId, showSidebar, socket } from '$lib/stores';
 	import { getChannelById, getChannelMessages, sendMessage } from '$lib/apis/channels';
 
 	import Messages from './Messages.svelte';
@@ -80,15 +80,17 @@
 		}
 	};
 
-	const submitHandler = async ({ content }) => {
+	const submitHandler = async ({ content, data }) => {
 		if (!content) {
 			return;
 		}
 
-		const res = await sendMessage(localStorage.token, id, { content: content }).catch((error) => {
-			toast.error(error);
-			return null;
-		});
+		const res = await sendMessage(localStorage.token, id, { content: content, data: data }).catch(
+			(error) => {
+				toast.error(error);
+				return null;
+			}
+		);
 
 		if (res) {
 			messagesContainerElement.scrollTop = messagesContainerElement.scrollHeight;
@@ -96,11 +98,15 @@
 	};
 
 	onMount(() => {
+		if ($chatId) {
+			chatId.set('');
+		}
+
 		$socket?.on('channel-events', channelEventHandler);
 	});
 
 	onDestroy(() => {
-		$socket?.off('channel-events', channelEventHandler);
+		// $socket?.off('channel-events', channelEventHandler);
 	});
 </script>
 
@@ -108,6 +114,7 @@
 	class="h-screen max-h-[100dvh] {$showSidebar
 		? 'md:max-w-[calc(100%-260px)]'
 		: ''} w-full max-w-full flex flex-col"
+	id="channel-container"
 >
 	<Navbar {channel} />
 

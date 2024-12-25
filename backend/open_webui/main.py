@@ -239,6 +239,7 @@ from open_webui.config import (
     CORS_ALLOW_ORIGIN,
     DEFAULT_LOCALE,
     OAUTH_PROVIDERS,
+    WEBUI_URL,
     # Admin
     ENABLE_ADMIN_CHAT_ACCESS,
     ENABLE_ADMIN_EXPORT,
@@ -264,7 +265,6 @@ from open_webui.env import (
     SAFE_MODE,
     SRC_LOG_LEVELS,
     VERSION,
-    WEBUI_URL,
     WEBUI_BUILD_HASH,
     WEBUI_SECRET_KEY,
     WEBUI_SESSION_COOKIE_SAME_SITE,
@@ -389,6 +389,7 @@ app.state.OPENAI_MODELS = {}
 #
 ########################################
 
+app.state.config.WEBUI_URL = WEBUI_URL
 app.state.config.ENABLE_SIGNUP = ENABLE_SIGNUP
 app.state.config.ENABLE_LOGIN_FORM = ENABLE_LOGIN_FORM
 app.state.config.ENABLE_API_KEY = ENABLE_API_KEY
@@ -522,6 +523,22 @@ app.state.rf = None
 app.state.YOUTUBE_LOADER_TRANSLATION = None
 
 
+try:
+    app.state.ef = get_ef(
+        app.state.config.RAG_EMBEDDING_ENGINE,
+        app.state.config.RAG_EMBEDDING_MODEL,
+        RAG_EMBEDDING_MODEL_AUTO_UPDATE,
+    )
+
+    app.state.rf = get_rf(
+        app.state.config.RAG_RERANKING_MODEL,
+        RAG_RERANKING_MODEL_AUTO_UPDATE,
+    )
+except Exception as e:
+    log.error(f"Error updating models: {e}")
+    pass
+
+
 app.state.EMBEDDING_FUNCTION = get_embedding_function(
     app.state.config.RAG_EMBEDDING_ENGINE,
     app.state.config.RAG_EMBEDDING_MODEL,
@@ -538,21 +555,6 @@ app.state.EMBEDDING_FUNCTION = get_embedding_function(
     ),
     app.state.config.RAG_EMBEDDING_BATCH_SIZE,
 )
-
-try:
-    app.state.ef = get_ef(
-        app.state.config.RAG_EMBEDDING_ENGINE,
-        app.state.config.RAG_EMBEDDING_MODEL,
-        RAG_EMBEDDING_MODEL_AUTO_UPDATE,
-    )
-
-    app.state.rf = get_rf(
-        app.state.config.RAG_RERANKING_MODEL,
-        RAG_RERANKING_MODEL_AUTO_UPDATE,
-    )
-except Exception as e:
-    log.error(f"Error updating models: {e}")
-    pass
 
 
 ########################################
@@ -856,6 +858,7 @@ async def chat_completion(
             "session_id": form_data.pop("session_id", None),
             "tool_ids": form_data.get("tool_ids", None),
             "files": form_data.get("files", None),
+            "features": form_data.get("features", None),
         }
         form_data["metadata"] = metadata
 
@@ -871,7 +874,7 @@ async def chat_completion(
     try:
         response = await chat_completion_handler(request, form_data, user)
         return await process_chat_response(
-            request, response, user, events, metadata, tasks
+            request, response, form_data, user, events, metadata, tasks
         )
     except Exception as e:
         raise HTTPException(
@@ -1136,9 +1139,9 @@ async def get_opensearch_xml():
     <ShortName>{WEBUI_NAME}</ShortName>
     <Description>Search {WEBUI_NAME}</Description>
     <InputEncoding>UTF-8</InputEncoding>
-    <Image width="16" height="16" type="image/x-icon">{WEBUI_URL}/static/favicon.png</Image>
-    <Url type="text/html" method="get" template="{WEBUI_URL}/?q={"{searchTerms}"}"/>
-    <moz:SearchForm>{WEBUI_URL}</moz:SearchForm>
+    <Image width="16" height="16" type="image/x-icon">{app.state.config.WEBUI_URL}/static/favicon.png</Image>
+    <Url type="text/html" method="get" template="{app.state.config.WEBUI_URL}/?q={"{searchTerms}"}"/>
+    <moz:SearchForm>{app.state.config.WEBUI_URL}</moz:SearchForm>
     </OpenSearchDescription>
     """
     return Response(content=xml_content, media_type="application/xml")

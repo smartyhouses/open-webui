@@ -23,6 +23,8 @@
 	import Pencil from '$lib/components/icons/Pencil.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Textarea from '$lib/components/common/Textarea.svelte';
+	import Image from '$lib/components/common/Image.svelte';
+	import FileItem from '$lib/components/common/FileItem.svelte';
 
 	export let message;
 	export let showUserProfile = true;
@@ -124,13 +126,13 @@
 			<div class="flex-auto w-0 pl-1">
 				{#if showUserProfile}
 					<Name>
-						<div class="text-sm">
+						<div class=" self-end text-base font-medium">
 							{message?.user?.name}
 						</div>
 
 						{#if message.created_at}
 							<div
-								class=" self-center text-xs invisible group-hover:visible text-gray-400 font-medium first-letter:capitalize ml-0.5 -mt-0.5"
+								class=" self-center text-xs invisible group-hover:visible text-gray-400 font-medium first-letter:capitalize ml-0.5 translate-y-[1px]"
 							>
 								<Tooltip
 									content={dayjs(message.created_at / 1000000).format('dddd, DD MMMM YYYY HH:mm')}
@@ -140,6 +142,27 @@
 							</div>
 						{/if}
 					</Name>
+				{/if}
+
+				{#if (message?.data?.files ?? []).length > 0}
+					<div class="my-2.5 w-full flex overflow-x-auto gap-2 flex-wrap">
+						{#each message?.data?.files as file}
+							<div>
+								{#if file.type === 'image'}
+									<Image src={file.url} alt={file.name} imageClassName=" max-h-96 rounded-lg" />
+								{:else}
+									<FileItem
+										item={file}
+										url={file.url}
+										name={file.name}
+										type={file.type}
+										size={file?.size}
+										colorClassName="bg-white dark:bg-gray-850 "
+									/>
+								{/if}
+							</div>
+						{/each}
+					</div>
 				{/if}
 
 				{#if edit}

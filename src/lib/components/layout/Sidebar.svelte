@@ -415,6 +415,7 @@
 		});
 
 		if (res) {
+			$socket.emit('join-channels', { auth: { token: $user.token } });
 			await initChannels();
 			showCreateChannel = false;
 		}
@@ -557,10 +558,23 @@
 				on:input={searchDebounceHandler}
 				placeholder={$i18n.t('Search')}
 			/>
+
+			<div class="absolute z-40 right-3.5 top-1">
+				<Tooltip content={$i18n.t('New folder')}>
+					<button
+						class="p-1 rounded-lg bg-gray-50 hover:bg-gray-100 dark:bg-gray-950 dark:hover:bg-gray-900 text-gray-500 dark:text-gray-500 transition"
+						on:click={() => {
+							createFolder();
+						}}
+					>
+						<Plus className=" size-3" strokeWidth="2.5" />
+					</button>
+				</Tooltip>
+			</div>
 		</div>
 
 		<div
-			class="relative flex flex-col flex-1 overflow-y-auto {$temporaryChatEnabled
+			class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden {$temporaryChatEnabled
 				? 'opacity-20'
 				: ''}"
 		>
