@@ -103,13 +103,9 @@ WEBUI_NAME = os.environ.get("WEBUI_NAME", "Portal")
 #if WEBUI_NAME != "Open WebUI":
 #    WEBUI_NAME += " (Open WebUI)"
 
-<<<<<<< HEAD
 WEBUI_URL = os.environ.get("WEBUI_URL", "http://localhost:3000")
 
 WEBUI_FAVICON_URL = "https://raw.githubusercontent.com/sorokinvld/portal-brandpack/refs/heads/main/favicon.ico"
-=======
-WEBUI_FAVICON_URL = "https://openwebui.com/favicon.png"
->>>>>>> 4f886c3944f2020a48e268cb91887bf8c339780a
 
 
 ####################################
