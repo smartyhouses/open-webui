@@ -313,6 +313,11 @@ RESET_CONFIG_ON_START = (
     os.environ.get("RESET_CONFIG_ON_START", "False").lower() == "true"
 )
 
+
+ENABLE_REALTIME_CHAT_SAVE = (
+    os.environ.get("ENABLE_REALTIME_CHAT_SAVE", "True").lower() == "true"
+)
+
 ####################################
 # REDIS
 ####################################
