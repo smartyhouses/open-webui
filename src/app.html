@@ -14,11 +14,11 @@
 		/>
 		<meta name="theme-color" content="#171717" />
 		<meta name="robots" content="noindex,nofollow" />
-		<meta name="description" content="Open WebUI" />
+		<meta name="description" content="Portal" />
 		<link
 			rel="search"
 			type="application/opensearchdescription+xml"
-			title="Open WebUI"
+			title="Portal"
 			href="/opensearch.xml"
 		/>
 
@@ -32,7 +32,7 @@
 			// On page load or when changing themes, best to add inline in `head` to avoid FOUC
 			(() => {
 				const metaThemeColorTag = document.querySelector('meta[name="theme-color"]');
-				const prefersDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const prefersDarkTheme = window.matchMedia('(prefers-color-scheme: oled-dark)').matches;
 
 				if (!localStorage?.theme) {
 					localStorage.theme = 'system';
