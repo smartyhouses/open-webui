@@ -588,20 +588,6 @@ load_oauth_providers()
 
 STATIC_DIR = Path(os.getenv("STATIC_DIR", OPEN_WEBUI_DIR / "static")).resolve()
 
-
-def override_static(path: str, content: str):
-    # Ensure path is safe
-    if "/" in path or ".." in path:
-        log.error(f"Invalid path: {path}")
-        return
-
-    file_path = os.path.join(STATIC_DIR, path)
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-    with open(file_path, "wb") as f:
-        f.write(base64.b64decode(content))  # Convert Base64 back to raw binary
-
-
 frontend_favicon = FRONTEND_BUILD_DIR / "static" / "favicon.png"
 
 if frontend_favicon.exists():
@@ -1778,6 +1764,12 @@ RAG_WEB_SEARCH_ENGINE = PersistentConfig(
     "RAG_WEB_SEARCH_ENGINE",
     "rag.web.search.engine",
     os.getenv("RAG_WEB_SEARCH_ENGINE", ""),
+)
+
+RAG_WEB_SEARCH_FULL_CONTEXT = PersistentConfig(
+    "RAG_WEB_SEARCH_FULL_CONTEXT",
+    "rag.web.search.full_context",
+    os.getenv("RAG_WEB_SEARCH_FULL_CONTEXT", "False").lower() == "true",
 )
 
 # You can provide a list of your own websites to filter after performing a web search.
