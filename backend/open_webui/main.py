@@ -95,6 +95,7 @@ from open_webui.config import (
     OLLAMA_API_CONFIGS,
     # OpenAI
     ENABLE_OPENAI_API,
+    ONEDRIVE_CLIENT_ID,
     OPENAI_API_BASE_URLS,
     OPENAI_API_KEYS,
     OPENAI_API_CONFIGS,
@@ -217,11 +218,13 @@ from open_webui.config import (
     GOOGLE_PSE_ENGINE_ID,
     GOOGLE_DRIVE_CLIENT_ID,
     GOOGLE_DRIVE_API_KEY,
+    ONEDRIVE_CLIENT_ID,
     ENABLE_RAG_HYBRID_SEARCH,
     ENABLE_RAG_LOCAL_WEB_FETCH,
     ENABLE_RAG_WEB_LOADER_SSL_VERIFICATION,
     ENABLE_RAG_WEB_SEARCH,
     ENABLE_GOOGLE_DRIVE_INTEGRATION,
+    ENABLE_ONEDRIVE_INTEGRATION,
     UPLOAD_DIR,
     # WebUI
     WEBUI_AUTH,
@@ -568,6 +571,7 @@ app.state.config.RAG_WEB_SEARCH_FULL_CONTEXT = RAG_WEB_SEARCH_FULL_CONTEXT
 app.state.config.RAG_WEB_SEARCH_DOMAIN_FILTER_LIST = RAG_WEB_SEARCH_DOMAIN_FILTER_LIST
 
 app.state.config.ENABLE_GOOGLE_DRIVE_INTEGRATION = ENABLE_GOOGLE_DRIVE_INTEGRATION
+app.state.config.ENABLE_ONEDRIVE_INTEGRATION = ENABLE_ONEDRIVE_INTEGRATION
 app.state.config.SEARXNG_QUERY_URL = SEARXNG_QUERY_URL
 app.state.config.GOOGLE_PSE_API_KEY = GOOGLE_PSE_API_KEY
 app.state.config.GOOGLE_PSE_ENGINE_ID = GOOGLE_PSE_ENGINE_ID
@@ -915,7 +919,7 @@ async def get_models(request: Request, user=Depends(get_verified_user)):
 
         return filtered_models
 
-    models = await get_all_models(request)
+    models = await get_all_models(request, user=user)
 
     # Filter out filter pipelines
     models = [
@@ -955,7 +959,7 @@ async def chat_completion(
     user=Depends(get_verified_user),
 ):
     if not request.app.state.MODELS:
-        await get_all_models(request)
+        await get_all_models(request, user=user)
 
     model_item = form_data.pop("model_item", {})
     tasks = form_data.pop("background_tasks", None)
@@ -1150,6 +1154,7 @@ async def get_app_config(request: Request):
                     "enable_admin_export": ENABLE_ADMIN_EXPORT,
                     "enable_admin_chat_access": ENABLE_ADMIN_CHAT_ACCESS,
                     "enable_google_drive_integration": app.state.config.ENABLE_GOOGLE_DRIVE_INTEGRATION,
+                    "enable_onedrive_integration": app.state.config.ENABLE_ONEDRIVE_INTEGRATION,
                 }
                 if user is not None
                 else {}
@@ -1181,6 +1186,9 @@ async def get_app_config(request: Request):
                     "client_id": GOOGLE_DRIVE_CLIENT_ID.value,
                     "api_key": GOOGLE_DRIVE_API_KEY.value,
                 },
+                "onedrive": {
+                    "client_id": ONEDRIVE_CLIENT_ID.value
+                }
             }
             if user is not None
             else {}
