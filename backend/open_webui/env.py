@@ -111,7 +111,7 @@ WEBUI_NAME = os.environ.get("WEBUI_NAME", "Open WebUI")
 #if WEBUI_NAME != "Open WebUI":
 #    WEBUI_NAME += " (Open WebUI)"
 
-WEBUI_FAVICON_URL = "https://openwebui.com/favicon.png"
+WEBUI_FAVICON_URL = "https://github.com/sorokinvld/portal-brandpack/blob/main/favicon.ico"
 
 TRUSTED_SIGNATURE_KEY = os.environ.get("TRUSTED_SIGNATURE_KEY", "")
 
