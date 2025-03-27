@@ -584,6 +584,7 @@ async def chat_completion_files_handler(
                         ),
                         k=request.app.state.config.TOP_K,
                         reranking_function=request.app.state.rf,
+                        k_reranker=request.app.state.config.TOP_K_RERANKER,
                         r=request.app.state.config.RELEVANCE_THRESHOLD,
                         hybrid_search=request.app.state.config.ENABLE_RAG_HYBRID_SEARCH,
                         full_context=request.app.state.config.RAG_FULL_CONTEXT,
@@ -847,7 +848,7 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         for source_idx, source in enumerate(sources):
             if "document" in source:
                 for doc_idx, doc_context in enumerate(source["document"]):
-                    context_string += f"<source><source_id>{source_idx}</source_id><source_context>{doc_context}</source_context></source>\n"
+                    context_string += f"<source><source_id>{source_idx + 1}</source_id><source_context>{doc_context}</source_context></source>\n"
 
         context_string = context_string.strip()
         prompt = get_last_user_message(form_data["messages"])
