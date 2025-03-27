@@ -35,7 +35,8 @@
 		showOverview,
 		chatTitle,
 		showArtifacts,
-		tools
+		tools,
+		toolServers
 	} from '$lib/stores';
 	import {
 		convertMessagesToHistory,
@@ -119,6 +120,7 @@
 	let imageGenerationEnabled = false;
 	let webSearchEnabled = false;
 	let codeInterpreterEnabled = false;
+
 	let chat = null;
 	let tags = [];
 
@@ -1565,6 +1567,7 @@
 
 				files: (files?.length ?? 0) > 0 ? files : undefined,
 				tool_ids: selectedToolIds.length > 0 ? selectedToolIds : undefined,
+				tool_servers: $toolServers,
 
 				features: {
 					image_generation:
@@ -2033,6 +2036,7 @@
 								bind:codeInterpreterEnabled
 								bind:webSearchEnabled
 								bind:atSelectedModel
+								toolServers={$toolServers}
 								transparentBackground={$settings?.backgroundImageUrl ?? false}
 								{stopResponse}
 								{createMessagePair}
@@ -2086,6 +2090,7 @@
 								bind:webSearchEnabled
 								bind:atSelectedModel
 								transparentBackground={$settings?.backgroundImageUrl ?? false}
+								toolServers={$toolServers}
 								{stopResponse}
 								{createMessagePair}
 								on:upload={async (e) => {
