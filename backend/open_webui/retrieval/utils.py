@@ -1,9 +1,7 @@
 import logging
 import os
-import uuid
 from typing import Optional, Union
 
-import asyncio
 import requests
 import hashlib
 
@@ -12,13 +10,13 @@ from langchain.retrievers import ContextualCompressionRetriever, EnsembleRetriev
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 
-
 from open_webui.config import VECTOR_DB
 from open_webui.retrieval.vector.connector import VECTOR_DB_CLIENT
-from open_webui.utils.misc import get_last_user_message, calculate_sha256_string
 
 from open_webui.models.users import UserModel
 from open_webui.models.files import Files
+
+from open_webui.retrieval.vector.main import GetResult
 
 from open_webui.env import (
     SRC_LOG_LEVELS,
@@ -102,6 +100,7 @@ def get_doc(collection_name: str, user: UserModel = None):
 
 def query_doc_with_hybrid_search(
     collection_name: str,
+    collection_result: GetResult,
     query: str,
     embedding_function,
     k: int,
@@ -110,11 +109,9 @@ def query_doc_with_hybrid_search(
     r: float,
 ) -> dict:
     try:
-        result = VECTOR_DB_CLIENT.get(collection_name=collection_name)
-
         bm25_retriever = BM25Retriever.from_texts(
-            texts=result.documents[0],
-            metadatas=result.metadatas[0],
+            texts=collection_result.documents[0],
+            metadatas=collection_result.metadatas[0],
         )
         bm25_retriever.k = k
 
@@ -151,6 +148,7 @@ def query_doc_with_hybrid_search(
             )
             sorted_items = sorted_items[:k]
             distances, documents, metadatas = map(list, zip(*sorted_items))
+
         result = {
             "distances": [distances],
             "documents": [documents],
@@ -282,11 +280,24 @@ def query_collection_with_hybrid_search(
 ) -> dict:
     results = []
     error = False
+    # Fetch collection data once per collection sequentially
+    # Avoid fetching the same data multiple times later
+    collection_results = {}
+    for collection_name in collection_names:
+        try:
+            collection_results[collection_name] = VECTOR_DB_CLIENT.get(
+                collection_name=collection_name
+            )
+        except Exception as e:
+            log.exception(f"Failed to fetch collection {collection_name}: {e}")
+            collection_results[collection_name] = None
+
     for collection_name in collection_names:
         try:
             for query in queries:
                 result = query_doc_with_hybrid_search(
                     collection_name=collection_name,
+                    collection_result=collection_results[collection_name],
                     query=query,
                     embedding_function=embedding_function,
                     k=k,
