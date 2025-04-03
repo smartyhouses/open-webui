@@ -25,7 +25,11 @@
 	export let connection = null;
 
 	let url = '';
+	let path = '/openapi.json';
+
+	let auth_type = 'bearer';
 	let key = '';
+
 	let enable = true;
 
 	let loading = false;
@@ -38,6 +42,8 @@
 
 		const connection = {
 			url,
+			path,
+			auth_type,
 			key,
 			config: {
 				enable: enable
@@ -51,13 +57,19 @@
 
 		url = '';
 		key = '';
+		path = '/openapi.json';
+		auth_type = 'bearer';
+
 		enable = true;
 	};
 
 	const init = () => {
 		if (connection) {
 			url = connection.url;
-			key = connection.key;
+			path = connection?.path ?? '/openapi.json';
+
+			auth_type = connection?.auth_type ?? 'bearer';
+			key = connection?.key ?? '';
 
 			enable = connection.config?.enable ?? true;
 		}
@@ -125,9 +137,20 @@
 										required
 									/>
 								</div>
+
+								<div class="flex-1">
+									<input
+										class="w-full text-sm bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-700 outline-hidden"
+										type="text"
+										bind:value={path}
+										placeholder={$i18n.t('openapi.json Path')}
+										autocomplete="off"
+										required
+									/>
+								</div>
 							</div>
 
-							<div class="flex flex-col shrink-0 self-end">
+							<div class="flex flex-col shrink-0 self-start">
 								<Tooltip content={enable ? $i18n.t('Enabled') : $i18n.t('Disabled')}>
 									<Switch bind:state={enable} />
 								</Tooltip>
@@ -135,22 +158,41 @@
 						</div>
 
 						<div class="text-xs text-gray-500 mt-1">
-							{$i18n.t(`WebUI will make requests to "{{url}}/openapi.json"`, {
-								url: url
+							{$i18n.t(`WebUI will make requests to "{{url}}{{path}}"`, {
+								url: url,
+								path: path
 							})}
 						</div>
 
 						<div class="flex gap-2 mt-2">
 							<div class="flex flex-col w-full">
-								<div class=" mb-0.5 text-xs text-gray-500">{$i18n.t('Key')}</div>
+								<div class="  text-xs text-gray-500">{$i18n.t('Auth')}</div>
 
-								<div class="flex-1">
-									<SensitiveInput
-										className="w-full text-sm bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-700 outline-hidden"
-										bind:value={key}
-										placeholder={$i18n.t('API Key')}
-										required={false}
-									/>
+								<div class="flex gap-2">
+									<div class="flex-shrink-0 self-start">
+										<select
+											class="w-full text-sm bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-700 outline-hidden pr-5"
+											bind:value={auth_type}
+										>
+											<option value="bearer">Bearer</option>
+											<option value="session">Session</option>
+										</select>
+									</div>
+
+									<div class="flex flex-1 items-center">
+										{#if auth_type === 'bearer'}
+											<SensitiveInput
+												className="w-full text-sm bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-700 outline-hidden"
+												bind:value={key}
+												placeholder={$i18n.t('API Key')}
+												required={false}
+											/>
+										{:else if auth_type === 'session'}
+											<div class="text-xs text-gray-500 self-center translate-y-[1px]">
+												{$i18n.t('Forwards system user session credentials to authenticate')}
+											</div>
+										{/if}
+									</div>
 								</div>
 							</div>
 						</div>

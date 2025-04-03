@@ -625,27 +625,28 @@ def apply_params_to_form_data(form_data, model):
         if "keep_alive" in params:
             form_data["keep_alive"] = params["keep_alive"]
     else:
-        if "seed" in params:
+        if "seed" in params and params["seed"] is not None:
             form_data["seed"] = params["seed"]
 
-        if "stop" in params:
+        if "stop" in params and params["stop"] is not None:
             form_data["stop"] = params["stop"]
 
-        if "temperature" in params:
+        if "temperature" in params and params["temperature"] is not None:
             form_data["temperature"] = params["temperature"]
 
-        if "max_tokens" in params:
+        if "max_tokens" in params and params["max_tokens"] is not None:
             form_data["max_tokens"] = params["max_tokens"]
 
-        if "top_p" in params:
+        if "top_p" in params and params["top_p"] is not None:
             form_data["top_p"] = params["top_p"]
 
-        if "frequency_penalty" in params:
+        if "frequency_penalty" in params and params["frequency_penalty"] is not None:
             form_data["frequency_penalty"] = params["frequency_penalty"]
 
-        if "reasoning_effort" in params:
+        if "reasoning_effort" in params and params["reasoning_effort"] is not None:
             form_data["reasoning_effort"] = params["reasoning_effort"]
-        if "logit_bias" in params:
+
+        if "logit_bias" in params and params["logit_bias"] is not None:
             try:
                 form_data["logit_bias"] = json.loads(
                     convert_logit_bias_input_to_json(params["logit_bias"])
@@ -865,7 +866,9 @@ async def process_chat_payload(request, form_data, user, metadata, model):
         for source_idx, source in enumerate(sources):
             if "document" in source:
                 for doc_idx, doc_context in enumerate(source["document"]):
-                    context_string += f"<source><source_id>{source_idx + 1}</source_id><source_context>{doc_context}</source_context></source>\n"
+                    context_string += (
+                        f'<source id="{source_idx + 1}">{doc_context}</source>\n'
+                    )
 
         context_string = context_string.strip()
         prompt = get_last_user_message(form_data["messages"])
@@ -1198,13 +1201,15 @@ async def process_chat_response(
                                 )
 
                                 tool_result = None
+                                tool_result_files = None
                                 for result in results:
                                     if tool_call_id == result.get("tool_call_id", ""):
                                         tool_result = result.get("content", None)
+                                        tool_result_files = result.get("files", None)
                                         break
 
                                 if tool_result:
-                                    tool_calls_display_content = f'{tool_calls_display_content}\n<details type="tool_calls" done="true" id="{tool_call_id}" name="{tool_name}" arguments="{html.escape(json.dumps(tool_arguments))}" result="{html.escape(json.dumps(tool_result))}">\n<summary>Tool Executed</summary>\n</details>'
+                                    tool_calls_display_content = f'{tool_calls_display_content}\n<details type="tool_calls" done="true" id="{tool_call_id}" name="{tool_name}" arguments="{html.escape(json.dumps(tool_arguments))}" result="{html.escape(json.dumps(tool_result))}" files="{html.escape(json.dumps(tool_result_files)) if tool_result_files else ""}">\n<summary>Tool Executed</summary>\n</details>\n'
                                 else:
                                     tool_calls_display_content = f'{tool_calls_display_content}\n<details type="tool_calls" done="false" id="{tool_call_id}" name="{tool_name}" arguments="{html.escape(json.dumps(tool_arguments))}">\n<summary>Executing...</summary>\n</details>'
 
@@ -1805,7 +1810,7 @@ async def process_chat_response(
 
                 await stream_body_handler(response)
 
-                MAX_TOOL_CALL_RETRIES = 5
+                MAX_TOOL_CALL_RETRIES = 10
                 tool_call_retries = 0
 
                 while len(tool_calls) > 0 and tool_call_retries < MAX_TOOL_CALL_RETRIES:
@@ -1898,6 +1903,13 @@ async def process_chat_response(
                             except Exception as e:
                                 tool_result = str(e)
 
+                        tool_result_files = []
+                        if isinstance(tool_result, list):
+                            for item in tool_result:
+                                if item.startswith("data:"):
+                                    tool_result_files.append(item)
+                                    tool_result.remove(item)
+
                         if isinstance(tool_result, dict) or isinstance(
                             tool_result, list
                         ):
@@ -1907,6 +1919,11 @@ async def process_chat_response(
                             {
                                 "tool_call_id": tool_call_id,
                                 "content": tool_result,
+                                **(
+                                    {"files": tool_result_files}
+                                    if tool_result_files
+                                    else {}
+                                ),
                             }
                         )
 
