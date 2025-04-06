@@ -162,11 +162,16 @@ def upload_file(
 
 
 @router.get("/", response_model=list[FileModelResponse])
-async def list_files(user=Depends(get_verified_user)):
+async def list_files(user=Depends(get_verified_user), content: bool = Query(True)):
     if user.role == "admin":
         files = Files.get_files()
     else:
         files = Files.get_files_by_user_id(user.id)
+
+    if not content:
+        for file in files:
+            del file.data["content"]
+
     return files
 
 
