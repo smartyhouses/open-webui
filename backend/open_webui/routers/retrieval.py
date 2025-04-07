@@ -150,8 +150,8 @@ def get_rf(
                     device=DEVICE_TYPE,
                     trust_remote_code=RAG_RERANKING_MODEL_TRUST_REMOTE_CODE,
                 )
-            except:
-                log.error("CrossEncoder error")
+            except Exception as e:
+                log.error(f"CrossEncoder: {e}")
                 raise Exception(ERROR_MESSAGES.DEFAULT("CrossEncoder error"))
     return rf
 
@@ -958,7 +958,7 @@ def process_file(
 
         if form_data.content:
             # Update the content in the file
-            # Usage: /files/{file_id}/data/content/update
+            # Usage: /files/{file_id}/data/content/update, /files/ (audio file upload pipeline)
 
             try:
                 # /files/{file_id}/data/content/update
