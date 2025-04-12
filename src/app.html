@@ -35,7 +35,7 @@
 			// On page load or when changing themes, best to add inline in `head` to avoid FOUC
 			(() => {
 				const metaThemeColorTag = document.querySelector('meta[name="theme-color"]');
-				const prefersDarkTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				const prefersDarkTheme = window.matchMedia('(prefers-color-scheme: oled-dark)').matches;
 
 				if (!localStorage?.theme) {
 					localStorage.theme = 'system';
