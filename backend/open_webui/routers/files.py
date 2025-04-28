@@ -83,10 +83,12 @@ def upload_file(
     request: Request,
     file: UploadFile = File(...),
     user=Depends(get_verified_user),
-    file_metadata: dict = {},
+    file_metadata: dict = None,
     process: bool = Query(True),
 ):
     log.info(f"file.content_type: {file.content_type}")
+
+    file_metadata = file_metadata if file_metadata else {}
     try:
         unsanitized_filename = file.filename
         filename = os.path.basename(unsanitized_filename)
@@ -95,7 +97,13 @@ def upload_file(
         id = str(uuid.uuid4())
         name = filename
         filename = f"{id}_{filename}"
-        contents, file_path = Storage.upload_file(file.file, filename)
+        tags = {
+            "OpenWebUI-User-Email": user.email,
+            "OpenWebUI-User-Id": user.id,
+            "OpenWebUI-User-Name": user.name,
+            "OpenWebUI-File-Id": id,
+        }
+        contents, file_path = Storage.upload_file(file.file, filename, tags)
 
         file_item = Files.insert_new_file(
             user.id,
@@ -129,7 +137,15 @@ def upload_file(
                         ProcessFileForm(file_id=id, content=result.get("text", "")),
                         user=user,
                     )
-                elif file.content_type not in ["image/png", "image/jpeg", "image/gif"]:
+                elif file.content_type not in [
+                    "image/png",
+                    "image/jpeg",
+                    "image/gif",
+                    "video/mp4",
+                    "video/ogg",
+                    "video/quicktime",
+                    "video/webm",
+                ]:
                     process_file(request, ProcessFileForm(file_id=id), user=user)
 
                 file_item = Files.get_file_by_id(id=id)
