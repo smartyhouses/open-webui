@@ -327,13 +327,8 @@
 	"Discover a model": "모델 검색",
 	"Discover a prompt": "프롬프트 검색",
 	"Discover a tool": "도구 검색",
-<<<<<<< HEAD
-	"Discover how to use Portal and seek support from the community.": "",
-	"Discover wonders": "",
-=======
 	"Discover how to use Open WebUI and seek support from the community.": "Open WebUI 사용 방법을 알아보고 커뮤니티에서 지원을 받으세요.",
 	"Discover wonders": "놀라움을 체험하세요",
->>>>>>> upstream/dev
 	"Discover, download, and explore custom functions": "사용자 정의 함수 검색, 다운로드 및 탐색",
 	"Discover, download, and explore custom prompts": "사용자 정의 프롬프트 검색, 다운로드 및 탐색",
 	"Discover, download, and explore custom tools": "사용자 정의 도구 검색, 다운로드 및 탐색",

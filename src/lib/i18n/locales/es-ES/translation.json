@@ -1268,21 +1268,6 @@
 	"Yacy Password": "",
 	"Yacy Username": "",
 	"Yesterday": "Ayer",
-<<<<<<< HEAD
-	"You": "Usted",
-	"You are currently using a trial license. Please contact support to upgrade your license.": "Usted está utilizando actualmente una licencia de prueba. Por favor, contacte al soporte para actualizar su licencia.",
-	"You can only chat with a maximum of {{maxCount}} file(s) at a time.": "Solo puede chatear con un máximo de {{maxCount}} archivo(s) a la vez.",
-	"You can personalize your interactions with LLMs by adding memories through the 'Manage' button below, making them more helpful and tailored to you.": "Puede personalizar sus interacciones con LLMs añadiendo memorias a través del botón 'Gestionar' debajo, haciendo que sean más útiles y personalizados para usted.",
-	"You cannot upload an empty file.": "No puede subir un archivo vacío.",
-	"You do not have permission to upload files": "No tiene permiso para subir archivos",
-	"You do not have permission to upload files.": "No tiene permiso para subir archivos.",
-	"You have no archived conversations.": "No tiene conversaciones archivadas.",
-	"You have shared this chat": "Usted ha compartido esta conversación",
-	"You're a helpful assistant.": "Usted es un asistente útil.",
-	"You're now logged in.": "Usted ahora está conectado.",
-	"Your account status is currently pending activation.": "El estado de su cuenta actualmente se encuentra pendiente de activación.",
-	"Your entire contribution will go directly to the plugin developer; Open WebUI does not take any percentage. However, the chosen funding platform might have its own fees.": "Su contribución completa irá directamente a el desarrollador del plugin; Open WebUI no toma ningun porcentaje. Sin embargo, la plataforma de financiación elegida podría tener sus propias tarifas.",
-=======
 	"You": "Tu",
 	"You are currently using a trial license. Please contact support to upgrade your license.": "Actualmente estás utilizando una licencia de prueba. Por favor, para actualizar su licencia contacta con soporte.",
 	"You can only chat with a maximum of {{maxCount}} file(s) at a time.": "Solo puedes chatear con un máximo de {{maxCount}} archivo(s) a la vez.",
@@ -1295,7 +1280,6 @@
 	"You're now logged in.": "Has iniciado sesión.",
 	"Your account status is currently pending activation.": "Tu cuenta está pendiente de activación.",
 	"Your entire contribution will go directly to the plugin developer; Open WebUI does not take any percentage. However, the chosen funding platform might have its own fees.": "Tu entera contribución irá directamente al desarrollador del complemento; Open-WebUI no recibe ningún porcentaje. Sin embargo, la plataforma de financiación elegida podría tener sus propias tarifas.",
->>>>>>> upstream/dev
 	"Youtube": "Youtube",
 	"Youtube Language": "Youtube Idioma",
 	"Youtube Proxy URL": "Youtube URL Proxy"
