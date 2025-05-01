@@ -1178,6 +1178,11 @@ ENABLE_CHANNELS = PersistentConfig(
     os.environ.get("ENABLE_CHANNELS", "False").lower() == "true",
 )
 
+ENABLE_NOTES = PersistentConfig(
+    "ENABLE_NOTES",
+    "notes.enable",
+    os.environ.get("ENABLE_NOTES", "True").lower() == "true",
+)
 
 ENABLE_EVALUATION_ARENA_MODELS = PersistentConfig(
     "ENABLE_EVALUATION_ARENA_MODELS",
@@ -2648,6 +2653,18 @@ AUDIO_STT_AZURE_LOCALES = PersistentConfig(
     "AUDIO_STT_AZURE_LOCALES",
     "audio.stt.azure.locales",
     os.getenv("AUDIO_STT_AZURE_LOCALES", ""),
+)
+
+AUDIO_STT_AZURE_BASE_URL = PersistentConfig(
+    "AUDIO_STT_AZURE_BASE_URL",
+    "audio.stt.azure.base_url",
+    os.getenv("AUDIO_STT_AZURE_BASE_URL", ""),
+)
+
+AUDIO_STT_AZURE_MAX_SPEAKERS = PersistentConfig(
+    "AUDIO_STT_AZURE_MAX_SPEAKERS",
+    "audio.stt.azure.max_speakers",
+    os.getenv("AUDIO_STT_AZURE_MAX_SPEAKERS", "3"),
 )
 
 AUDIO_TTS_OPENAI_API_BASE_URL = PersistentConfig(
