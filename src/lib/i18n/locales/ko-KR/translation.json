@@ -254,11 +254,7 @@
 	"Copy Link": "링크 복사",
 	"Copy to clipboard": "클립보드에 복사",
 	"Copying to clipboard was successful!": "성공적으로 클립보드에 복사되었습니다!",
-<<<<<<< HEAD
-	"CORS must be properly configured by the provider to allow requests from Portal.": "",
-=======
 	"CORS must be properly configured by the provider to allow requests from Open WebUI.": "Open WebUI의 요청을 허용하려면 공급자가 CORS를 올바르게 구성해야 합니다.",
->>>>>>> upstream/dev
 	"Create": "생성",
 	"Create a knowledge base": "지식 기반 생성",
 	"Create a model": "모델 생성",
