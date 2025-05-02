@@ -515,6 +515,13 @@ ENABLE_OAUTH_GROUP_CREATION = PersistentConfig(
     os.environ.get("ENABLE_OAUTH_GROUP_CREATION", "False").lower() == "true",
 )
 
+
+OAUTH_BLOCKED_GROUPS = PersistentConfig(
+    "OAUTH_BLOCKED_GROUPS",
+    "oauth.blocked_groups",
+    os.environ.get("OAUTH_BLOCKED_GROUPS", "[]"),
+)
+
 OAUTH_ROLES_CLAIM = PersistentConfig(
     "OAUTH_ROLES_CLAIM",
     "oauth.roles_claim",
@@ -2604,6 +2611,7 @@ WHISPER_VAD_FILTER = PersistentConfig(
     os.getenv("WHISPER_VAD_FILTER", "False").lower() == "true",
 )
 
+WHISPER_LANGUAGE = os.getenv("WHISPER_LANGUAGE", "").lower() or None
 
 # Add Deepgram configuration
 DEEPGRAM_API_KEY = PersistentConfig(

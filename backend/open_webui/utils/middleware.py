@@ -355,29 +355,33 @@ async def chat_web_search_handler(
 
     all_results = []
 
-    for searchQuery in queries:
-        await event_emitter(
-            {
-                "type": "status",
-                "data": {
-                    "action": "web_search",
-                    "description": 'Searching "{{searchQuery}}"',
-                    "query": searchQuery,
-                    "done": False,
-                },
-            }
-        )
+    await event_emitter(
+        {
+            "type": "status",
+            "data": {
+                "action": "web_search",
+                "description": "Searching the web",
+                "done": False,
+            },
+        }
+    )
 
-        try:
-            results = await process_web_search(
+    gathered_results = await asyncio.gather(
+        *(
+            process_web_search(
                 request,
-                SearchForm(
-                    **{
-                        "query": searchQuery,
-                    }
-                ),
+                SearchForm(**{"query": searchQuery}),
                 user=user,
             )
+            for searchQuery in queries
+        ),
+        return_exceptions=True,
+    )
+
+    for searchQuery, results in zip(queries, gathered_results):
+        try:
+            if isinstance(results, Exception):
+                raise Exception(f"Error searching {searchQuery}: {str(results)}")
 
             if results:
                 all_results.append(results)
@@ -1422,8 +1426,10 @@ async def process_chat_response(
                             if after_tag:
                                 content_blocks[-1]["content"] = after_tag
 
+                            content = after_tag
                             break
-                elif content_blocks[-1]["type"] == content_type:
+
+                if content and content_blocks[-1]["type"] == content_type:
                     start_tag = content_blocks[-1]["start_tag"]
                     end_tag = content_blocks[-1]["end_tag"]
                     # Match end tag e.g., </tag>
