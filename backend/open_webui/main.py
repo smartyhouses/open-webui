@@ -64,6 +64,7 @@ from open_webui.routers import (
     auths,
     channels,
     chats,
+    notes,
     folders,
     configs,
     groups,
@@ -202,6 +203,8 @@ from open_webui.config import (
     CONTENT_EXTRACTION_ENGINE,
     TIKA_SERVER_URL,
     DOCLING_SERVER_URL,
+    DOCLING_OCR_ENGINE,
+    DOCLING_OCR_LANG,
     DOCUMENT_INTELLIGENCE_ENDPOINT,
     DOCUMENT_INTELLIGENCE_KEY,
     MISTRAL_OCR_API_KEY,
@@ -635,6 +638,8 @@ app.state.config.ENABLE_WEB_LOADER_SSL_VERIFICATION = ENABLE_WEB_LOADER_SSL_VERI
 app.state.config.CONTENT_EXTRACTION_ENGINE = CONTENT_EXTRACTION_ENGINE
 app.state.config.TIKA_SERVER_URL = TIKA_SERVER_URL
 app.state.config.DOCLING_SERVER_URL = DOCLING_SERVER_URL
+app.state.config.DOCLING_OCR_ENGINE = DOCLING_OCR_ENGINE
+app.state.config.DOCLING_OCR_LANG = DOCLING_OCR_LANG
 app.state.config.DOCUMENT_INTELLIGENCE_ENDPOINT = DOCUMENT_INTELLIGENCE_ENDPOINT
 app.state.config.DOCUMENT_INTELLIGENCE_KEY = DOCUMENT_INTELLIGENCE_KEY
 app.state.config.MISTRAL_OCR_API_KEY = MISTRAL_OCR_API_KEY
@@ -996,6 +1001,8 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 
 app.include_router(channels.router, prefix="/api/v1/channels", tags=["channels"])
 app.include_router(chats.router, prefix="/api/v1/chats", tags=["chats"])
+app.include_router(notes.router, prefix="/api/v1/notes", tags=["notes"])
+
 
 app.include_router(models.router, prefix="/api/v1/models", tags=["models"])
 app.include_router(knowledge.router, prefix="/api/v1/knowledge", tags=["knowledge"])
