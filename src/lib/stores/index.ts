@@ -220,6 +220,10 @@ type Config = {
 			[key: string]: string;
 		};
 	};
+	ui?: {
+		pending_user_overlay_title?: string;
+		pending_user_overlay_description?: string;
+	};
 };
 
 type PromptSuggestion = {
