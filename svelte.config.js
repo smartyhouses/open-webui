@@ -17,10 +17,10 @@ const config = {
 			fallback: 'index.html'
 		}),
 		// poll for new version name every 60 seconds (to trigger reload mechanic in +layout.svelte)
-		version: {
-			name: child_process.execSync('git rev-parse HEAD').toString().trim(),
-			pollInterval: 60000
-		}
+		//version: {
+		//	name: child_process.execSync('git rev-parse HEAD').toString().trim(),
+		//	pollInterval: 60000
+		//}
 	},
 	vitePlugin: {
 		// inspector: {
