@@ -340,6 +340,11 @@ async def chat_web_search_handler(
         log.exception(e)
         queries = [user_message]
 
+    # Check if generated queries are empty
+    if len(queries) == 1 and queries[0].strip() == "":
+        queries = [user_message]
+
+    # Check if queries are not found
     if len(queries) == 0:
         await event_emitter(
             {
@@ -944,19 +949,29 @@ async def process_chat_response(
         if message:
             messages = get_message_list(message_map, message.get("id"))
 
-            # Remove reasoning details and files from the messages.
+            # Remove details tags and files from the messages.
             # as get_message_list creates a new list, it does not affect
             # the original messages outside of this handler
             for message in messages:
-                message["content"] = re.sub(
-                    r"<details\s+type=\"reasoning\"[^>]*>.*?<\/details>",
-                    "",
-                    message["content"],
-                    flags=re.S,
-                ).strip()
+                content = message.get("content", "")
+                if isinstance(content, list):
+                    for item in content:
+                        if item.get("type") == "text":
+                            content = item["text"]
+                            break
 
-                if message.get("files"):
-                    message["files"] = []
+                if isinstance(content, str):
+                    content = re.sub(
+                        r"<details\b[^>]*>.*?<\/details>",
+                        "",
+                        content,
+                        flags=re.S | re.I,
+                    ).strip()
+
+                message = {
+                    "role": message["role"],
+                    "content": content,
+                }
 
             if tasks and messages:
                 if TASKS.TITLE_GENERATION in tasks:
