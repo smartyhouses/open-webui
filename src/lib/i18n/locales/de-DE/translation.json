@@ -337,7 +337,7 @@
 	"Discover a model": "Entdecken Sie weitere Modelle",
 	"Discover a prompt": "Entdecken Sie weitere Prompts",
 	"Discover a tool": "Entdecken Sie weitere Werkzeuge",
-	"Discover how to use Portal and seek support from the community.": "",
+	"Discover how to use Open WebUI and seek support from the community.": "Entdecken Sie, wie Sie Open WebUI nutzen und Unterstützung von der Community erhalten können.",
 	"Discover wonders": "Entdecken Sie Wunder",
 	"Discover, download, and explore custom functions": "Entdecken und beziehen Sie benutzerdefinierte Funktionen",
 	"Discover, download, and explore custom prompts": "Entdecken und beziehen Sie benutzerdefinierte Prompts",
@@ -746,13 +746,8 @@
 	"Logit Bias": "",
 	"Lost": "Verloren",
 	"LTR": "LTR",
-<<<<<<< HEAD
-	"Made by Portal Community": "Von der OpenWebUI-Community",
-	"Make sure to enclose them with": "Umschließe Variablen mit",
-=======
 	"Made by Open WebUI Community": "Von der OpenWebUI-Community",
 	"Make sure to enclose them with": "Umschließen Sie Variablen mit",
->>>>>>> upstream/dev
 	"Make sure to export a workflow.json file as API format from ComfyUI.": "Stellen Sie sicher, dass sie eine workflow.json-Datei im API-Format von ComfyUI exportieren.",
 	"Manage": "Verwalten",
 	"Manage Direct Connections": "Direkte Verbindungen verwalten",
