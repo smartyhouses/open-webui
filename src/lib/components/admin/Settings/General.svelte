@@ -203,7 +203,7 @@
 								<a href="https://twitter.com/portalos" target="_blank">
 									<img
 										alt="X (formerly Twitter) Follow"
-										src="https://img.shields.io/twitter/follow/OpenWebUI"
+										src="https://img.shields.io/twitter/follow/portalos"
 									/>
 								</a>
 
