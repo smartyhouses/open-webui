@@ -33,7 +33,7 @@
 	import ChevronRight from '../icons/ChevronRight.svelte';
 	import Switch from '../common/Switch.svelte';
 	import Spinner from '../common/Spinner.svelte';
-	import { capitalizeFirstLetter } from '$lib/utils';
+	import { capitalizeFirstLetter, copyToClipboard } from '$lib/utils';
 	import XMark from '../icons/XMark.svelte';
 	import EyeSlash from '../icons/EyeSlash.svelte';
 	import Eye from '../icons/Eye.svelte';
@@ -139,6 +139,17 @@
 			)
 		);
 		models = await getWorkspaceModels(localStorage.token);
+	};
+
+	const copyLinkHandler = async (model) => {
+		const baseUrl = window.location.origin;
+		const res = await copyToClipboard(`${baseUrl}/?model=${encodeURIComponent(model.id)}`);
+
+		if (res) {
+			toast.success($i18n.t('Copied link to clipboard'));
+		} else {
+			toast.error($i18n.t('Failed to copy link'));
+		}
 	};
 
 	const downloadModels = async (models) => {
@@ -257,7 +268,7 @@
 				class=" flex flex-col cursor-pointer w-full px-3 py-2 dark:hover:bg-white/5 hover:bg-black/5 rounded-xl transition"
 				id="model-item-{model.id}"
 			>
-				<div class="flex gap-4 mt-0.5 mb-0.5">
+				<div class="flex gap-4 mt-1 mb-0.5">
 					<div class=" w-[44px]">
 						<div
 							class=" rounded-full object-cover {model.is_active
@@ -298,7 +309,7 @@
 					</a>
 				</div>
 
-				<div class="flex justify-between items-center -mb-0.5 px-0.5">
+				<div class="flex justify-between items-center -mb-0.5 px-0.5 mt-1.5">
 					<div class=" text-xs mt-0.5">
 						<Tooltip
 							content={model?.user?.email ?? $i18n.t('Deleted User')}
@@ -382,6 +393,9 @@
 								}}
 								hideHandler={() => {
 									hideModelHandler(model);
+								}}
+								copyLinkHandler={() => {
+									copyLinkHandler(model);
 								}}
 								deleteHandler={() => {
 									selectedModel = model;
