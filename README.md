@@ -83,7 +83,7 @@ Want to learn more about Portal's features? Check out our [Portal documentation]
       </a>
     </td>
     <td>
-      Warp • The intelligent terminal for developers
+      <a href="https://warp.dev/open-webui">Warp</a> • The intelligent terminal for developers
     </td>
   </tr>
 </table>

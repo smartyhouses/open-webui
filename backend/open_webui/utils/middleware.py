@@ -299,13 +299,20 @@ async def chat_completion_tools_handler(
 async def chat_memory_handler(
     request: Request, form_data: dict, extra_params: dict, user
 ):
-    results = await query_memory(
-        request,
-        QueryMemoryForm(
-            **{"content": get_last_user_message(form_data["messages"]), "k": 3}
-        ),
-        user,
-    )
+    try:
+        results = await query_memory(
+            request,
+            QueryMemoryForm(
+                **{
+                    "content": get_last_user_message(form_data["messages"]) or "",
+                    "k": 3,
+                }
+            ),
+            user,
+        )
+    except Exception as e:
+        log.debug(e)
+        results = None
 
     user_context = ""
     if results and hasattr(results, "documents"):
@@ -671,6 +678,16 @@ def apply_params_to_form_data(form_data, model):
             del params[key]
 
     if custom_params:
+        # Attempt to parse custom_params if they are strings
+        for key, value in custom_params.items():
+            if isinstance(value, str):
+                try:
+                    # Attempt to parse the string as JSON
+                    custom_params[key] = json.loads(value)
+                except json.JSONDecodeError:
+                    # If it fails, keep the original string
+                    pass
+
         # If custom_params are provided, merge them into params
         params = deep_update(params, custom_params)
 
