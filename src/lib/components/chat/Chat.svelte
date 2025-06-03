@@ -304,7 +304,7 @@
 					message.followUps = data.follow_ups;
 
 					if (autoScroll) {
-						scrollToBottom();
+						scrollToBottom('smooth');
 					}
 				} else if (type === 'chat:title') {
 					chatTitle.set(data);
@@ -782,6 +782,7 @@
 
 		autoScroll = true;
 
+		resetInput();
 		await chatId.set('');
 		await chatTitle.set('');
 
@@ -919,10 +920,13 @@
 		}
 	};
 
-	const scrollToBottom = async () => {
+	const scrollToBottom = async (behavior = 'auto') => {
 		await tick();
 		if (messagesContainerElement) {
-			messagesContainerElement.scrollTop = messagesContainerElement.scrollHeight;
+			messagesContainerElement.scrollTo({
+				top: messagesContainerElement.scrollHeight,
+				behavior
+			});
 		}
 	};
 	const chatCompletedHandler = async (chatId, modelId, responseMessageId, messages) => {
