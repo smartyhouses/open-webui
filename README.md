@@ -79,7 +79,7 @@ Want to learn more about Portal's features? Check out our [Portal documentation]
   <tr>
     <td>
       <a href="https://warp.dev/open-webui" target="_blank">
-        <img src="https://docs.openwebui.com/sponsors/logos/warp.png" alt="n8n" style="width: 8rem; height: 8rem; border-radius: .75rem;" />
+        <img src="https://docs.openwebui.com/sponsors/logos/warp.png" alt="Warp" style="width: 8rem; height: 8rem; border-radius: .75rem;" />
       </a>
     </td>
     <td>
