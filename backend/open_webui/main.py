@@ -268,6 +268,8 @@ from open_webui.config import (
     BRAVE_SEARCH_API_KEY,
     EXA_API_KEY,
     PERPLEXITY_API_KEY,
+    PERPLEXITY_MODEL,
+    PERPLEXITY_SEARCH_CONTEXT_USAGE,
     SOUGOU_API_SID,
     SOUGOU_API_SK,
     KAGI_SEARCH_API_KEY,
@@ -413,6 +415,7 @@ from open_webui.utils.chat import (
     chat_completed as chat_completed_handler,
     chat_action as chat_action_handler,
 )
+from open_webui.utils.embeddings import generate_embeddings
 from open_webui.utils.middleware import process_chat_payload, process_chat_response
 from open_webui.utils.access_control import has_access
 
@@ -773,6 +776,8 @@ app.state.config.BING_SEARCH_V7_ENDPOINT = BING_SEARCH_V7_ENDPOINT
 app.state.config.BING_SEARCH_V7_SUBSCRIPTION_KEY = BING_SEARCH_V7_SUBSCRIPTION_KEY
 app.state.config.EXA_API_KEY = EXA_API_KEY
 app.state.config.PERPLEXITY_API_KEY = PERPLEXITY_API_KEY
+app.state.config.PERPLEXITY_MODEL = PERPLEXITY_MODEL
+app.state.config.PERPLEXITY_SEARCH_CONTEXT_USAGE = PERPLEXITY_SEARCH_CONTEXT_USAGE
 app.state.config.SOUGOU_API_SID = SOUGOU_API_SID
 app.state.config.SOUGOU_API_SK = SOUGOU_API_SK
 app.state.config.EXTERNAL_WEB_SEARCH_URL = EXTERNAL_WEB_SEARCH_URL
@@ -1201,6 +1206,37 @@ async def get_models(request: Request, user=Depends(get_verified_user)):
 async def get_base_models(request: Request, user=Depends(get_admin_user)):
     models = await get_all_base_models(request, user=user)
     return {"data": models}
+
+
+##################################
+# Embeddings
+##################################
+
+
+@app.post("/api/embeddings")
+async def embeddings(
+    request: Request, form_data: dict, user=Depends(get_verified_user)
+):
+    """
+    OpenAI-compatible embeddings endpoint.
+
+    This handler:
+      - Performs user/model checks and dispatches to the correct backend.
+      - Supports OpenAI, Ollama, arena models, pipelines, and any compatible provider.
+
+    Args:
+        request (Request): Request context.
+        form_data (dict): OpenAI-like payload (e.g., {"model": "...", "input": [...]})
+        user (UserModel): Authenticated user.
+
+    Returns:
+        dict: OpenAI-compatible embeddings response.
+    """
+    # Make sure models are loaded in app state
+    if not request.app.state.MODELS:
+        await get_all_models(request, user=user)
+    # Use generic dispatcher in utils.embeddings
+    return await generate_embeddings(request, form_data, user)
 
 
 @app.post("/api/chat/completions")
