@@ -181,6 +181,8 @@ After installation, you can access Portal at [http://localhost:3000](http://loca
 
 We offer various installation alternatives, including non-Docker native installation methods, Docker Compose, Kustomize, and Helm. Visit our [Portal Documentation](https://docs.openwebui.com/getting-started/) or join our [Discord community](https://discord.gg/5rJgQTnV4s) for comprehensive guidance.
 
+Look at the [Local Development Guide](https://docs.openwebui.com/getting-started/advanced-topics/development) for instructions on setting up a local development environment.
+
 ### Troubleshooting
 
 Encountering connection issues? Our [Portal Documentation](https://docs.openwebui.com/troubleshooting/) has got you covered. For further assistance and to join our vibrant community, visit the [Portal Discord](https://discord.gg/5rJgQTnV4s).
