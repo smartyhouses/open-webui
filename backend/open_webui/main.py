@@ -510,9 +510,10 @@ async def lifespan(app: FastAPI):
         redis_sentinels=get_sentinels_from_env(
             REDIS_SENTINEL_HOSTS, REDIS_SENTINEL_PORT
         ),
+        async_mode=True,
     )
 
-    if isinstance(app.state.redis, Redis):
+    if app.state.redis is not None:
         app.state.redis_task_command_listener = asyncio.create_task(
             redis_task_command_listener(app)
         )
@@ -1423,7 +1424,7 @@ async def stop_task_endpoint(
 
 @app.get("/api/tasks")
 async def list_tasks_endpoint(request: Request, user=Depends(get_verified_user)):
-    return {"tasks": list_tasks(request)}
+    return {"tasks": await list_tasks(request)}
 
 
 @app.get("/api/tasks/chat/{chat_id}")
@@ -1434,7 +1435,7 @@ async def list_tasks_by_chat_id_endpoint(
     if chat is None or chat.user_id != user.id:
         return {"task_ids": []}
 
-    task_ids = list_task_ids_by_chat_id(request, chat_id)
+    task_ids = await list_task_ids_by_chat_id(request, chat_id)
 
     print(f"Task IDs for chat {chat_id}: {task_ids}")
     return {"task_ids": task_ids}
