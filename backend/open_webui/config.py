@@ -347,6 +347,24 @@ MICROSOFT_CLIENT_TENANT_ID = PersistentConfig(
     os.environ.get("MICROSOFT_CLIENT_TENANT_ID", ""),
 )
 
+MICROSOFT_CLIENT_LOGIN_BASE_URL = PersistentConfig(
+    "MICROSOFT_CLIENT_LOGIN_BASE_URL",
+    "oauth.microsoft.login_base_url",
+    os.environ.get(
+        "MICROSOFT_CLIENT_LOGIN_BASE_URL", "https://login.microsoftonline.com"
+    ),
+)
+
+MICROSOFT_CLIENT_PICTURE_URL = PersistentConfig(
+    "MICROSOFT_CLIENT_PICTURE_URL",
+    "oauth.microsoft.picture_url",
+    os.environ.get(
+        "MICROSOFT_CLIENT_PICTURE_URL",
+        "https://graph.microsoft.com/v1.0/me/photo/$value",
+    ),
+)
+
+
 MICROSOFT_OAUTH_SCOPE = PersistentConfig(
     "MICROSOFT_OAUTH_SCOPE",
     "oauth.microsoft.scope",
@@ -542,7 +560,7 @@ def load_oauth_providers():
                 name="microsoft",
                 client_id=MICROSOFT_CLIENT_ID.value,
                 client_secret=MICROSOFT_CLIENT_SECRET.value,
-                server_metadata_url=f"https://login.microsoftonline.com/{MICROSOFT_CLIENT_TENANT_ID.value}/v2.0/.well-known/openid-configuration?appid={MICROSOFT_CLIENT_ID.value}",
+                server_metadata_url=f"{MICROSOFT_CLIENT_LOGIN_BASE_URL.value}/{MICROSOFT_CLIENT_TENANT_ID.value}/v2.0/.well-known/openid-configuration?appid={MICROSOFT_CLIENT_ID.value}",
                 client_kwargs={
                     "scope": MICROSOFT_OAUTH_SCOPE.value,
                 },
@@ -551,7 +569,7 @@ def load_oauth_providers():
 
         OAUTH_PROVIDERS["microsoft"] = {
             "redirect_uri": MICROSOFT_REDIRECT_URI.value,
-            "picture_url": "https://graph.microsoft.com/v1.0/me/photo/$value",
+            "picture_url": MICROSOFT_CLIENT_PICTURE_URL.value,
             "register": microsoft_oauth_register,
         }
 
@@ -1806,6 +1824,13 @@ if VECTOR_DB == "pgvector" and not PGVECTOR_DB_URL.startswith("postgres"):
 PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH = int(
     os.environ.get("PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH", "1536")
 )
+
+PGVECTOR_PGCRYPTO = os.getenv("PGVECTOR_PGCRYPTO", "false").lower() == "true"
+PGVECTOR_PGCRYPTO_KEY = os.getenv("PGVECTOR_PGCRYPTO_KEY", None)
+if PGVECTOR_PGCRYPTO and not PGVECTOR_PGCRYPTO_KEY:
+    raise ValueError(
+        "PGVECTOR_PGCRYPTO is enabled but PGVECTOR_PGCRYPTO_KEY is not set. Please provide a valid key."
+    )
 
 # Pinecone
 PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY", None)
