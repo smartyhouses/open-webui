@@ -698,13 +698,8 @@ def apply_params_to_form_data(form_data, model):
         params = deep_update(params, custom_params)
 
     if model.get("ollama"):
+        # Ollama specific parameters
         form_data["options"] = params
-
-        if "format" in params:
-            form_data["format"] = params["format"]
-
-        if "keep_alive" in params:
-            form_data["keep_alive"] = params["keep_alive"]
     else:
         if isinstance(params, dict):
             for key, value in params.items():
@@ -1871,9 +1866,11 @@ async def process_chat_response(
 
                                     value = delta.get("content")
 
-                                    reasoning_content = delta.get(
-                                        "reasoning_content"
-                                    ) or delta.get("reasoning")
+                                    reasoning_content = (
+                                        delta.get("reasoning_content")
+                                        or delta.get("reasoning")
+                                        or delta.get("thinking")
+                                    )
                                     if reasoning_content:
                                         if (
                                             not content_blocks
