@@ -192,11 +192,7 @@ async def send_post_request(
 
         raise HTTPException(
             status_code=r.status if r else 500,
-<<<<<<< HEAD
             detail=detail if detail else "Portal: Server Connection Error",
-=======
-            detail=detail if e else "Open WebUI: Server Connection Error",
->>>>>>> upstream/dev
         )
 
 

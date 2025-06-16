@@ -785,12 +785,7 @@
 	"Location access not allowed": "",
 	"Lost": "Perdeu",
 	"LTR": "Esquerda para Direita",
-<<<<<<< HEAD
 	"Made by Portal Community": "Feito pela Comunidade OpenWebUI",
-=======
-	"Made by Open WebUI Community": "Feito pela Comunidade OpenWebUI",
-	"Make password visible in the user interface": "",
->>>>>>> upstream/dev
 	"Make sure to enclose them with": "Certifique-se de encerrá-los com",
 	"Make sure to export a workflow.json file as API format from ComfyUI.": "Certifique-se de exportar um arquivo workflow.json como o formato API do ComfyUI.",
 	"Manage": "Gerenciar",

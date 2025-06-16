@@ -785,12 +785,7 @@
 	"Location access not allowed": "Tilgang til lokasjon er ikke tillatt",
 	"Lost": "Tapt",
 	"LTR": "LTR",
-<<<<<<< HEAD
 	"Made by Portal Community": "Laget av OpenWebUI-fellesskapet",
-=======
-	"Made by Open WebUI Community": "Laget av OpenWebUI-fellesskapet",
-	"Make password visible in the user interface": "",
->>>>>>> upstream/dev
 	"Make sure to enclose them with": "Sørg for å omslutte dem med",
 	"Make sure to export a workflow.json file as API format from ComfyUI.": "Sørg for å eksportere en workflow.json-fil i API-formatet fra ComfyUI.",
 	"Manage": "Administrer",

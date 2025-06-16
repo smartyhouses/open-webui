@@ -785,12 +785,7 @@
 	"Location access not allowed": "",
 	"Lost": "",
 	"LTR": "LTR",
-<<<<<<< HEAD
 	"Made by Portal Community": "ਓਪਨਵੈਬਯੂਆਈ ਕਮਿਊਨਿਟੀ ਦੁਆਰਾ ਬਣਾਇਆ ਗਿਆ",
-=======
-	"Made by Open WebUI Community": "ਓਪਨਵੈਬਯੂਆਈ ਕਮਿਊਨਿਟੀ ਦੁਆਰਾ ਬਣਾਇਆ ਗਿਆ",
-	"Make password visible in the user interface": "",
->>>>>>> upstream/dev
 	"Make sure to enclose them with": "ਸੁਨਿਸ਼ਚਿਤ ਕਰੋ ਕਿ ਉਨ੍ਹਾਂ ਨੂੰ ਘੇਰੋ",
 	"Make sure to export a workflow.json file as API format from ComfyUI.": "",
 	"Manage": "",

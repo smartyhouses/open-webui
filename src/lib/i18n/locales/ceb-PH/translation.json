@@ -785,12 +785,7 @@
 	"Location access not allowed": "",
 	"Lost": "",
 	"LTR": "",
-<<<<<<< HEAD
 	"Made by Portal Community": "Gihimo sa komunidad sa OpenWebUI",
-=======
-	"Made by Open WebUI Community": "Gihimo sa komunidad sa OpenWebUI",
-	"Make password visible in the user interface": "",
->>>>>>> upstream/dev
 	"Make sure to enclose them with": "Siguruha nga palibutan sila",
 	"Make sure to export a workflow.json file as API format from ComfyUI.": "",
 	"Manage": "",
