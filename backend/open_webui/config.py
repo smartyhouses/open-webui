@@ -431,6 +431,12 @@ OAUTH_SCOPES = PersistentConfig(
     os.environ.get("OAUTH_SCOPES", "openid email profile"),
 )
 
+OAUTH_TIMEOUT = PersistentConfig(
+    "OAUTH_TIMEOUT",
+    "oauth.oidc.oauth_timeout",
+    os.environ.get("OAUTH_TIMEOUT", ""),
+)
+
 OAUTH_CODE_CHALLENGE_METHOD = PersistentConfig(
     "OAUTH_CODE_CHALLENGE_METHOD",
     "oauth.oidc.code_challenge_method",
@@ -540,7 +546,14 @@ def load_oauth_providers():
                 client_id=GOOGLE_CLIENT_ID.value,
                 client_secret=GOOGLE_CLIENT_SECRET.value,
                 server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
-                client_kwargs={"scope": GOOGLE_OAUTH_SCOPE.value},
+                client_kwargs={
+                    "scope": GOOGLE_OAUTH_SCOPE.value,
+                    **(
+                        {"timeout": int(OAUTH_TIMEOUT.value)}
+                        if OAUTH_TIMEOUT.value
+                        else {}
+                    ),
+                },
                 redirect_uri=GOOGLE_REDIRECT_URI.value,
             )
 
@@ -563,6 +576,11 @@ def load_oauth_providers():
                 server_metadata_url=f"{MICROSOFT_CLIENT_LOGIN_BASE_URL.value}/{MICROSOFT_CLIENT_TENANT_ID.value}/v2.0/.well-known/openid-configuration?appid={MICROSOFT_CLIENT_ID.value}",
                 client_kwargs={
                     "scope": MICROSOFT_OAUTH_SCOPE.value,
+                    **(
+                        {"timeout": int(OAUTH_TIMEOUT.value)}
+                        if OAUTH_TIMEOUT.value
+                        else {}
+                    ),
                 },
                 redirect_uri=MICROSOFT_REDIRECT_URI.value,
             )
@@ -584,7 +602,14 @@ def load_oauth_providers():
                 authorize_url="https://github.com/login/oauth/authorize",
                 api_base_url="https://api.github.com",
                 userinfo_endpoint="https://api.github.com/user",
-                client_kwargs={"scope": GITHUB_CLIENT_SCOPE.value},
+                client_kwargs={
+                    "scope": GITHUB_CLIENT_SCOPE.value,
+                    **(
+                        {"timeout": int(OAUTH_TIMEOUT.value)}
+                        if OAUTH_TIMEOUT.value
+                        else {}
+                    ),
+                },
                 redirect_uri=GITHUB_CLIENT_REDIRECT_URI.value,
             )
 
@@ -603,6 +628,9 @@ def load_oauth_providers():
         def oidc_oauth_register(client):
             client_kwargs = {
                 "scope": OAUTH_SCOPES.value,
+                **(
+                    {"timeout": int(OAUTH_TIMEOUT.value)} if OAUTH_TIMEOUT.value else {}
+                ),
             }
 
             if (
