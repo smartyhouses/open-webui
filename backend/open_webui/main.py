@@ -117,7 +117,7 @@ from open_webui.config import (
     # Direct Connections
     ENABLE_DIRECT_CONNECTIONS,
     # Model list
-    ENABLE_MODEL_LIST_CACHE,
+    ENABLE_BASE_MODELS_CACHE,
     # Thread pool size for FastAPI/AnyIO
     THREAD_POOL_SIZE,
     # Tool Server Configs
@@ -398,6 +398,7 @@ from open_webui.env import (
     AUDIT_LOG_LEVEL,
     CHANGELOG,
     REDIS_URL,
+    REDIS_KEY_PREFIX,
     REDIS_SENTINEL_HOSTS,
     REDIS_SENTINEL_PORT,
     GLOBAL_LOG_LEVEL,
@@ -536,7 +537,7 @@ async def lifespan(app: FastAPI):
 
     asyncio.create_task(periodic_usage_pool_cleanup())
 
-    if app.state.config.ENABLE_MODEL_LIST_CACHE:
+    if app.state.config.ENABLE_BASE_MODELS_CACHE:
         await get_all_models(
             Request(
                 # Creating a mock request object to pass to get_all_models
@@ -577,6 +578,7 @@ app.state.instance_id = None
 app.state.config = AppConfig(
     redis_url=REDIS_URL,
     redis_sentinels=get_sentinels_from_env(REDIS_SENTINEL_HOSTS, REDIS_SENTINEL_PORT),
+    redis_key_prefix=REDIS_KEY_PREFIX,
 )
 app.state.redis = None
 
@@ -641,11 +643,12 @@ app.state.config.ENABLE_DIRECT_CONNECTIONS = ENABLE_DIRECT_CONNECTIONS
 
 ########################################
 #
-# MODEL LIST
+# MODELS
 #
 ########################################
 
-app.state.config.ENABLE_MODEL_LIST_CACHE = ENABLE_MODEL_LIST_CACHE
+app.state.config.ENABLE_BASE_MODELS_CACHE = ENABLE_BASE_MODELS_CACHE
+app.state.BASE_MODELS = []
 
 ########################################
 #
@@ -1543,6 +1546,7 @@ async def get_app_config(request: Request):
         "name": app.state.WEBUI_NAME,
         "version": VERSION,
         "default_locale": str(DEFAULT_LOCALE),
+        "offline_mode": OFFLINE_MODE,
         "oauth": {
             "providers": {
                 name: config.get("name", name)

@@ -19,6 +19,7 @@ from open_webui.env import (
     DATABASE_URL,
     ENV,
     REDIS_URL,
+    REDIS_KEY_PREFIX,
     REDIS_SENTINEL_HOSTS,
     REDIS_SENTINEL_PORT,
     FRONTEND_BUILD_DIR,
@@ -211,11 +212,16 @@ class PersistentConfig(Generic[T]):
 class AppConfig:
     _state: dict[str, PersistentConfig]
     _redis: Optional[redis.Redis] = None
+    _redis_key_prefix: str
 
     def __init__(
-        self, redis_url: Optional[str] = None, redis_sentinels: Optional[list] = []
+        self,
+        redis_url: Optional[str] = None,
+        redis_sentinels: Optional[list] = [],
+        redis_key_prefix: str = "open-webui",
     ):
         super().__setattr__("_state", {})
+        super().__setattr__("_redis_key_prefix", redis_key_prefix)
         if redis_url:
             super().__setattr__(
                 "_redis",
@@ -230,7 +236,7 @@ class AppConfig:
             self._state[key].save()
 
             if self._redis:
-                redis_key = f"open-webui:config:{key}"
+                redis_key = f"{self._redis_key_prefix}:config:{key}"
                 self._redis.set(redis_key, json.dumps(self._state[key].value))
 
     def __getattr__(self, key):
@@ -239,7 +245,7 @@ class AppConfig:
 
         # If Redis is available, check for an updated value
         if self._redis:
-            redis_key = f"open-webui:config:{key}"
+            redis_key = f"{self._redis_key_prefix}:config:{key}"
             redis_value = self._redis.get(redis_key)
 
             if redis_value is not None:
@@ -925,13 +931,13 @@ OPENAI_API_BASE_URL = "https://api.openai.com/v1"
 
 
 ####################################
-# MODEL_LIST
+# MODELS
 ####################################
 
-ENABLE_MODEL_LIST_CACHE = PersistentConfig(
-    "ENABLE_MODEL_LIST_CACHE",
-    "models.cache",
-    os.environ.get("ENABLE_MODEL_LIST_CACHE", "False").lower() == "true",
+ENABLE_BASE_MODELS_CACHE = PersistentConfig(
+    "ENABLE_BASE_MODELS_CACHE",
+    "models.base_models_cache",
+    os.environ.get("ENABLE_BASE_MODELS_CACHE", "False").lower() == "true",
 )
 
 

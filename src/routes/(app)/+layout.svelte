@@ -199,7 +199,7 @@
 					event.preventDefault();
 					console.log('temporaryChat');
 
-					if ($user?.permissions?.chat?.temporary_enforced) {
+					if ($user?.role !== 'admin' && $user?.permissions?.chat?.temporary_enforced) {
 						temporaryChatEnabled.set(true);
 					} else {
 						temporaryChatEnabled.set(!$temporaryChatEnabled);
@@ -222,13 +222,13 @@
 					temporaryChatEnabled.set(true);
 				}
 
-				if ($user?.permissions?.chat?.temporary_enforced) {
+				if ($user?.role !== 'admin' && $user?.permissions?.chat?.temporary_enforced) {
 					temporaryChatEnabled.set(true);
 				}
 			}
 
 			// Check for version updates
-			if ($user?.role === 'admin') {
+			if ($user?.role === 'admin' && !$config?.offline_mode) {
 				// Check if the user has dismissed the update toast in the last 24 hours
 				if (localStorage.dismissedUpdateToast) {
 					const dismissedUpdateToast = new Date(Number(localStorage.dismissedUpdateToast));

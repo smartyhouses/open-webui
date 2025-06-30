@@ -322,6 +322,7 @@ ENABLE_REALTIME_CHAT_SAVE = (
 ####################################
 
 REDIS_URL = os.environ.get("REDIS_URL", "")
+REDIS_KEY_PREFIX = os.environ.get("REDIS_KEY_PREFIX", "open-webui")
 REDIS_SENTINEL_HOSTS = os.environ.get("REDIS_SENTINEL_HOSTS", "")
 REDIS_SENTINEL_PORT = os.environ.get("REDIS_SENTINEL_PORT", "26379")
 
@@ -575,6 +576,12 @@ OTEL_TRACES_SAMPLER = os.environ.get(
 ).lower()
 OTEL_BASIC_AUTH_USERNAME = os.environ.get("OTEL_BASIC_AUTH_USERNAME", "")
 OTEL_BASIC_AUTH_PASSWORD = os.environ.get("OTEL_BASIC_AUTH_PASSWORD", "")
+
+
+OTEL_OTLP_SPAN_EXPORTER = os.environ.get(
+    "OTEL_OTLP_SPAN_EXPORTER", "grpc"
+).lower()  # grpc or http
+
 
 ####################################
 # TOOLS/FUNCTIONS PIP OPTIONS
