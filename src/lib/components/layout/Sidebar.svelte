@@ -29,14 +29,10 @@
 	const i18n = getContext('i18n');
 
 	import {
-		deleteChatById,
 		getChatList,
 		getAllTags,
-		getChatListBySearchText,
-		createNewChat,
 		getPinnedChatList,
 		toggleChatPinnedStatusById,
-		getChatPinnedStatusById,
 		getChatById,
 		updateChatFolderIdById,
 		importChat
@@ -202,7 +198,15 @@
 		for (const item of items) {
 			console.log(item);
 			if (item.chat) {
-				await importChat(localStorage.token, item.chat, item?.meta ?? {}, pinned, folderId);
+				await importChat(
+					localStorage.token,
+					item.chat,
+					item?.meta ?? {},
+					pinned,
+					folderId,
+					item?.created_at ?? null,
+					item?.updated_at ?? null
+				);
 			}
 		}
 
@@ -513,7 +517,7 @@
 							alt="logo"
 						/>
 					</div>
-					<div class=" self-center font-medium text-sm text-gray-850 dark:text-white font-primary">
+					<div class=" self-center text-sm text-gray-850 dark:text-white font-primary">
 						{$i18n.t('New Chat')}
 					</div>
 				</div>
@@ -563,7 +567,7 @@
 				</div>
 
 				<div class="flex self-center translate-y-[0.5px]">
-					<div class=" self-center font-medium text-sm font-primary">{$i18n.t('Search')}</div>
+					<div class=" self-center text-sm font-primary">{$i18n.t('Search')}</div>
 				</div>
 			</button>
 		</div>
@@ -604,7 +608,7 @@
 					</div>
 
 					<div class="flex self-center translate-y-[0.5px]">
-						<div class=" self-center font-medium text-sm font-primary">{$i18n.t('Notes')}</div>
+						<div class=" self-center text-sm font-primary">{$i18n.t('Notes')}</div>
 					</div>
 				</a>
 			</div>
@@ -643,7 +647,7 @@
 					</div>
 
 					<div class="flex self-center translate-y-[0.5px]">
-						<div class=" self-center font-medium text-sm font-primary">{$i18n.t('Workspace')}</div>
+						<div class=" self-center text-sm font-primary">{$i18n.t('Workspace')}</div>
 					</div>
 				</a>
 			</div>
@@ -679,7 +683,7 @@
 									</div>
 
 									<div class="flex self-center translate-y-[0.5px]">
-										<div class=" self-center font-medium text-sm font-primary line-clamp-1">
+										<div class=" self-center text-sm font-primary line-clamp-1">
 											{model?.name ?? modelId}
 										</div>
 									</div>
@@ -735,7 +739,15 @@
 							return null;
 						});
 						if (!chat && item) {
-							chat = await importChat(localStorage.token, item.chat, item?.meta ?? {});
+							chat = await importChat(
+								localStorage.token,
+								item.chat,
+								item?.meta ?? {},
+								false,
+								null,
+								item?.created_at ?? null,
+								item?.updated_at ?? null
+							);
 						}
 
 						if (chat) {
@@ -793,7 +805,15 @@
 										return null;
 									});
 									if (!chat && item) {
-										chat = await importChat(localStorage.token, item.chat, item?.meta ?? {});
+										chat = await importChat(
+											localStorage.token,
+											item.chat,
+											item?.meta ?? {},
+											false,
+											null,
+											item?.created_at ?? null,
+											item?.updated_at ?? null
+										);
 									}
 
 									if (chat) {
