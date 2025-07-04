@@ -32,9 +32,12 @@
 
 	export let prompt = '';
 	export let files = [];
+	export let messageInput = null;
 
 	export let selectedToolIds = [];
 	export let selectedFilterIds = [];
+
+	export let showCommands = false;
 
 	export let imageGenerationEnabled = false;
 	export let codeInterpreterEnabled = false;
@@ -207,6 +210,7 @@
 
 			<div class="text-base font-normal @md:max-w-3xl w-full py-3 {atSelectedModel ? 'mt-2' : ''}">
 				<MessageInput
+					bind:this={messageInput}
 					{history}
 					{selectedModels}
 					bind:files
@@ -218,6 +222,7 @@
 					bind:codeInterpreterEnabled
 					bind:webSearchEnabled
 					bind:atSelectedModel
+					bind:showCommands
 					{toolServers}
 					{transparentBackground}
 					{stopResponse}
