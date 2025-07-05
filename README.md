@@ -78,16 +78,6 @@ Want to learn more about Portal's features? Check out our [Portal documentation]
   </tr>
   <tr>
     <td>
-      <a href="https://warp.dev/open-webui" target="_blank">
-        <img src="https://docs.openwebui.com/sponsors/logos/warp.png" alt="Warp" style="width: 8rem; height: 8rem; border-radius: .75rem;" />
-      </a>
-    </td>
-    <td>
-      <a href="https://warp.dev/open-webui">Warp</a> • The intelligent terminal for developers
-    </td>
-  </tr>
-  <tr>
-    <td>
       <a href="https://tailscale.com/blog/self-host-a-local-ai-stack/?utm_source=OpenWebUI&utm_medium=paid-ad-placement&utm_campaign=OpenWebUI-Docs" target="_blank">
         <img src="https://docs.openwebui.com/sponsors/logos/tailscale.png" alt="Tailscale" style="width: 8rem; height: 8rem; border-radius: .75rem;" />
       </a>
