@@ -120,6 +120,8 @@
 
 	const extractInputVariables = (text: string): Record<string, any> => {
 		const regex = /{{\s*([^|}\s]+)\s*\|\s*([^}]+)\s*}}/g;
+		const regularRegex = /{{\s*([^|}\s]+)\s*}}/g;
+
 		const variables: Record<string, any> = {};
 		let match;
 
@@ -130,11 +132,73 @@
 			variables[varName] = parseVariableDefinition(definition);
 		}
 
+		// Then, extract regular variables (without pipe) - only if not already processed
+		while ((match = regularRegex.exec(text)) !== null) {
+			const varName = match[1].trim();
+
+			// Only add if not already processed as custom variable
+			if (!variables.hasOwnProperty(varName)) {
+				variables[varName] = { type: 'text' }; // Default type for regular variables
+			}
+		}
+
 		return variables;
 	};
 
+	const splitProperties = (str: string, delimiter: string): string[] => {
+		const result: string[] = [];
+		let current = '';
+		let depth = 0;
+		let inString = false;
+		let escapeNext = false;
+
+		for (let i = 0; i < str.length; i++) {
+			const char = str[i];
+
+			if (escapeNext) {
+				current += char;
+				escapeNext = false;
+				continue;
+			}
+
+			if (char === '\\') {
+				current += char;
+				escapeNext = true;
+				continue;
+			}
+
+			if (char === '"' && !escapeNext) {
+				inString = !inString;
+				current += char;
+				continue;
+			}
+
+			if (!inString) {
+				if (char === '{' || char === '[') {
+					depth++;
+				} else if (char === '}' || char === ']') {
+					depth--;
+				}
+
+				if (char === delimiter && depth === 0) {
+					result.push(current.trim());
+					current = '';
+					continue;
+				}
+			}
+
+			current += char;
+		}
+
+		if (current.trim()) {
+			result.push(current.trim());
+		}
+
+		return result;
+	};
+
 	const parseVariableDefinition = (definition: string): Record<string, any> => {
-		const [firstPart, ...propertyParts] = definition.split(':');
+		const [firstPart, ...propertyParts] = splitProperties(definition, ':');
 
 		// Parse type (explicit or implied)
 		const type = firstPart.startsWith('type=') ? firstPart.slice(5) : firstPart;

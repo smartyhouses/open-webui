@@ -136,7 +136,7 @@
 			const nodes = lines.map(
 				(line, index) =>
 					index === 0
-						? state.schema.text(line) // First line is plain text
+						? state.schema.text(line ? line : []) // First line is plain text
 						: state.schema.nodes.paragraph.create({}, line ? state.schema.text(line) : undefined) // Subsequent lines are paragraphs
 			);
 
@@ -176,35 +176,32 @@
 		if (!editor) return;
 		text = text.replaceAll('\n\n', '\n');
 		const { state, view } = editor;
+		const { schema, tr } = state;
 
 		if (text.includes('\n')) {
 			// Multiple lines: make paragraphs
-			const { schema, tr } = state;
 			const lines = text.split('\n');
-
 			// Map each line to a paragraph node (empty lines -> empty paragraph)
 			const nodes = lines.map((line) =>
 				schema.nodes.paragraph.create({}, line ? schema.text(line) : undefined)
 			);
-
 			// Create a document fragment containing all parsed paragraphs
 			const fragment = Fragment.fromArray(nodes);
-
 			// Replace current selection with these paragraphs
 			tr.replaceSelectionWith(fragment, false /* don't select new */);
-
-			// You probably want to move the cursor after the inserted content
-			// tr.setSelection(Selection.near(tr.doc.resolve(tr.selection.to)));
-
 			view.dispatch(tr);
 		} else if (text === '') {
-			// Empty: delete selection or paragraph
+			// Empty: replace with empty paragraph using tr
 			editor.commands.clearContent();
 		} else {
-			editor.commands.setContent(editor.state.schema.text(text));
+			// Single line: create paragraph with text
+			const paragraph = schema.nodes.paragraph.create({}, schema.text(text));
+			tr.replaceSelectionWith(paragraph, false);
+			view.dispatch(tr);
 		}
 
 		selectNextTemplate(editor.view.state, editor.view.dispatch);
+		focus();
 	};
 
 	export const replaceVariables = (variables) => {
@@ -253,7 +250,7 @@
 	export const focus = () => {
 		if (editor) {
 			editor.view.focus();
-			// Scroll to the top of the editor
+			// Scroll to the current selection
 			editor.view.dispatch(editor.view.state.tr.scrollIntoView());
 		}
 	};
@@ -326,11 +323,7 @@
 			setTimeout(() => {
 				const templateFound = selectNextTemplate(editor.view.state, editor.view.dispatch);
 				if (!templateFound) {
-					// If no template found, set cursor at the end
-					const endPos = editor.view.state.doc.content.size;
-					editor.view.dispatch(
-						editor.view.state.tr.setSelection(TextSelection.create(editor.view.state.doc, endPos))
-					);
+					editor.commands.focus('end');
 				}
 			}, 0);
 		}
@@ -339,7 +332,11 @@
 	onMount(async () => {
 		let content = value;
 
-		if (!json) {
+		if (json) {
+			if (!content) {
+				content = html ? html : null;
+			}
+		} else {
 			if (preserveBreaks) {
 				turndownService.addRule('preserveBreaks', {
 					filter: 'br', // Target <br> elements
@@ -369,10 +366,6 @@
 
 				// Usage example
 				content = await tryParse(value);
-			}
-		} else {
-			if (html && !content) {
-				content = html;
 			}
 		}
 
@@ -417,40 +410,34 @@
 				// force re-render so `editor.isActive` works as expected
 				editor = editor;
 
-				html = editor.getHTML();
+				const htmlValue = editor.getHTML();
+				const jsonValue = editor.getJSON();
+				let mdValue = turndownService
+					.turndown(
+						htmlValue
+							.replace(/<p><\/p>/g, '<br/>')
+							.replace(/ {2,}/g, (m) => m.replace(/ /g, '\u00a0'))
+					)
+					.replace(/\u00a0/g, ' ');
 
 				onChange({
-					html: editor.getHTML(),
-					json: editor.getJSON(),
-					md: turndownService
-						.turndown(
-							editor
-								.getHTML()
-								.replace(/<p><\/p>/g, '<br/>')
-								.replace(/ {2,}/g, (m) => m.replace(/ /g, '\u00a0'))
-						)
-						.replace(/\u00a0/g, ' ')
+					html: htmlValue,
+					json: jsonValue,
+					md: mdValue
 				});
 
 				if (json) {
-					value = editor.getJSON();
+					value = jsonValue;
 				} else {
-					if (!raw) {
-						let newValue = turndownService
-							.turndown(
-								editor
-									.getHTML()
-									.replace(/<p><\/p>/g, '<br/>')
-									.replace(/ {2,}/g, (m) => m.replace(/ /g, '\u00a0'))
-							)
-							.replace(/\u00a0/g, ' ');
-
+					if (raw) {
+						value = htmlValue;
+					} else {
 						if (!preserveBreaks) {
-							newValue = newValue.replace(/<br\/>/g, '');
+							mdValue = mdValue.replace(/<br\/>/g, '');
 						}
 
-						if (value !== newValue) {
-							value = newValue;
+						if (value !== mdValue) {
+							value = mdValue;
 
 							// check if the node is paragraph as well
 							if (editor.isActive('paragraph')) {
@@ -459,8 +446,6 @@
 								}
 							}
 						}
-					} else {
-						value = editor.getHTML();
 					}
 				}
 			},
@@ -545,46 +530,72 @@
 					},
 					paste: (view, event) => {
 						if (event.clipboardData) {
-							// Extract plain text from clipboard and paste it without formatting
 							const plainText = event.clipboardData.getData('text/plain');
 							if (plainText) {
-								if (largeTextAsFile) {
-									if (plainText.length > PASTED_TEXT_CHARACTER_LIMIT) {
-										// Dispatch paste event to parent component
-										eventDispatch('paste', { event });
-										event.preventDefault();
-										return true;
-									}
+								if (largeTextAsFile && plainText.length > PASTED_TEXT_CHARACTER_LIMIT) {
+									// Delegate handling of large text pastes to the parent component.
+									eventDispatch('paste', { event });
+									event.preventDefault();
+									return true;
 								}
+
+								// Workaround for mobile WebViews that strip line breaks when pasting from
+								// clipboard suggestions (e.g., Gboard clipboard history).
+								const isMobile = /Android|iPhone|iPad|iPod|Windows Phone/i.test(
+									navigator.userAgent
+								);
+								const isWebView =
+									typeof window !== 'undefined' &&
+									(/wv/i.test(navigator.userAgent) || // Standard Android WebView flag
+										(navigator.userAgent.includes('Android') &&
+											!navigator.userAgent.includes('Chrome')) || // Other generic Android WebViews
+										(navigator.userAgent.includes('Safari') &&
+											!navigator.userAgent.includes('Version'))); // iOS WebView (in-app browsers)
+
+								if (isMobile && isWebView && plainText.includes('\n')) {
+									// Manually deconstruct the pasted text and insert it with hard breaks
+									// to preserve the multi-line formatting.
+									const { state, dispatch } = view;
+									const { from, to } = state.selection;
+
+									const lines = plainText.split('\n');
+									const nodes = [];
+
+									lines.forEach((line, index) => {
+										if (index > 0) {
+											nodes.push(state.schema.nodes.hardBreak.create());
+										}
+										if (line.length > 0) {
+											nodes.push(state.schema.text(line));
+										}
+									});
+
+									const fragment = Fragment.fromArray(nodes);
+									const tr = state.tr.replaceWith(from, to, fragment);
+									dispatch(tr.scrollIntoView());
+									event.preventDefault();
+									return true;
+								}
+								// Let ProseMirror handle normal text paste in non-problematic environments.
 								return false;
 							}
 
-							// Check if the pasted content contains image files
+							// Delegate image paste handling to the parent component.
 							const hasImageFile = Array.from(event.clipboardData.files).some((file) =>
 								file.type.startsWith('image/')
 							);
-
-							// Check for image in dataTransfer items (for cases where files are not available)
+							// Fallback for cases where an image is in dataTransfer.items but not clipboardData.files.
 							const hasImageItem = Array.from(event.clipboardData.items).some((item) =>
 								item.type.startsWith('image/')
 							);
-							if (hasImageFile) {
-								// If there's an image, dispatch the event to the parent
-								eventDispatch('paste', { event });
-								event.preventDefault();
-								return true;
-							}
-
-							if (hasImageItem) {
-								// If there's an image item, dispatch the event to the parent
+							if (hasImageFile || hasImageItem) {
 								eventDispatch('paste', { event });
 								event.preventDefault();
 								return true;
 							}
 						}
-
-						// For all other cases (text, formatted text, etc.), let ProseMirror handle it
-						view.dispatch(view.state.tr.scrollIntoView()); // Move viewport to the cursor after pasting
+						// For all other cases, let ProseMirror perform its default paste behavior.
+						view.dispatch(view.state.tr.scrollIntoView());
 						return false;
 					}
 				}
@@ -609,36 +620,44 @@
 	const onValueChange = () => {
 		if (!editor) return;
 
+		const jsonValue = editor.getJSON();
+		const htmlValue = editor.getHTML();
+		let mdValue = turndownService
+			.turndown(
+				(preserveBreaks ? htmlValue.replace(/<p><\/p>/g, '<br/>') : htmlValue).replace(
+					/ {2,}/g,
+					(m) => m.replace(/ /g, '\u00a0')
+				)
+			)
+			.replace(/\u00a0/g, ' ');
+
+		if (value === '') {
+			editor.commands.clearContent(); // Clear content if value is empty
+			selectTemplate();
+
+			return;
+		}
+
 		if (json) {
-			if (JSON.stringify(value) !== JSON.stringify(editor.getJSON())) {
+			if (JSON.stringify(value) !== JSON.stringify(jsonValue)) {
 				editor.commands.setContent(value);
 				selectTemplate();
 			}
 		} else {
 			if (raw) {
-				if (value !== editor.getHTML()) {
+				if (value !== htmlValue) {
 					editor.commands.setContent(value);
 					selectTemplate();
 				}
 			} else {
-				if (
-					value !==
-					turndownService
-						.turndown(
-							(preserveBreaks
-								? editor.getHTML().replace(/<p><\/p>/g, '<br/>')
-								: editor.getHTML()
-							).replace(/ {2,}/g, (m) => m.replace(/ /g, '\u00a0'))
-						)
-						.replace(/\u00a0/g, ' ')
-				) {
-					preserveBreaks
-						? editor.commands.setContent(value)
-						: editor.commands.setContent(
-								marked.parse(value.replaceAll(`\n<br/>`, `<br/>`), {
+				if (value !== mdValue) {
+					editor.commands.setContent(
+						preserveBreaks
+							? value
+							: marked.parse(value.replaceAll(`\n<br/>`, `<br/>`), {
 									breaks: false
 								})
-							); // Update editor content
+					);
 
 					selectTemplate();
 				}
