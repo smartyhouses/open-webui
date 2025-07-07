@@ -26,14 +26,17 @@
 
 	const i18n = getContext('i18n');
 
+	export let note = null;
+	export let files = [];
 	export let messages = [];
+
+	export let onInsert = (content) => {};
 
 	let loaded = false;
 
 	let loading = false;
 	let stopResponseFlag = false;
 
-	let systemTextareaElement: HTMLTextAreaElement;
 	let messagesContainerElement: HTMLDivElement;
 
 	let system = '';
@@ -93,7 +96,24 @@
 							}
 						: undefined,
 					...messages
-				].filter((message) => message)
+				].filter((message) => message),
+				files: [
+					...(note?.data?.content?.md
+						? [
+								{
+									id: `note:${note?.id ?? 'note'}`,
+									name: note?.name ?? 'Note',
+									file: {
+										data: {
+											content: note?.data?.content?.md
+										}
+									},
+									context: 'full'
+								}
+							]
+						: []), // Include the note content as a file
+					...files
+				]
 			},
 			`${WEBUI_BASE_URL}/api`
 		);
@@ -231,7 +251,7 @@
 				>
 					<div class=" h-full w-full flex flex-col">
 						<div class="flex-1 p-1">
-							<Messages bind:messages />
+							<Messages bind:messages {onInsert} />
 						</div>
 					</div>
 				</div>
