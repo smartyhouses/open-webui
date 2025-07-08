@@ -13,12 +13,7 @@
 	import { marked } from 'marked';
 	import { toast } from 'svelte-sonner';
 
-	import { config, models, settings, showSidebar } from '$lib/stores';
 	import { goto } from '$app/navigation';
-
-	import { compressImage, copyToClipboard, splitStream } from '$lib/utils';
-	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
-	import { uploadFile } from '$lib/apis/files';
 
 	import dayjs from '$lib/dayjs';
 	import calendar from 'dayjs/plugin/calendar';
@@ -28,6 +23,21 @@
 	dayjs.extend(calendar);
 	dayjs.extend(duration);
 	dayjs.extend(relativeTime);
+
+	import { PaneGroup, Pane, PaneResizer } from 'paneforge';
+
+	import { compressImage, copyToClipboard, splitStream } from '$lib/utils';
+	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
+	import { uploadFile } from '$lib/apis/files';
+	import { chatCompletion } from '$lib/apis/openai';
+
+	import { config, models, settings, showSidebar } from '$lib/stores';
+
+	import NotePanel from '$lib/components/notes/NotePanel.svelte';
+	import MenuLines from '../icons/MenuLines.svelte';
+	import ChatBubbleOval from '../icons/ChatBubbleOval.svelte';
+	import Settings from './NoteEditor/Settings.svelte';
+	import Chat from './NoteEditor/Chat.svelte';
 
 	async function loadLocale(locales) {
 		for (const locale of locales) {
@@ -69,7 +79,6 @@
 	import Sidebar from '../common/Sidebar.svelte';
 	import ArrowRight from '../icons/ArrowRight.svelte';
 	import Cog6 from '../icons/Cog6.svelte';
-	import { chatCompletion } from '$lib/apis/openai';
 
 	export let id: null | string = null;
 
@@ -111,6 +120,8 @@
 	let enhancing = false;
 	let streaming = false;
 
+	let stopResponseFlag = false;
+
 	let inputElement = null;
 
 	const init = async () => {
@@ -119,6 +130,8 @@
 			toast.error(`${error}`);
 			return null;
 		});
+
+		messages = [];
 
 		if (res) {
 			note = res;
@@ -204,6 +217,11 @@
 		enhancing = false;
 		versionIdx = null;
 	}
+
+	const stopResponseHandler = async () => {
+		stopResponseFlag = true;
+		console.log('stopResponse', stopResponseFlag);
+	};
 
 	function setContentByVersion(versionIdx) {
 		if (!note.data.versions?.length) return;
@@ -569,7 +587,13 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 
 			while (true) {
 				const { value, done } = await reader.read();
-				if (done) {
+				if (done || stopResponseFlag) {
+					if (stopResponseFlag) {
+						controller.abort('User: Stop Response');
+					}
+
+					enhancing = false;
+					streaming = false;
 					break;
 				}
 
@@ -682,14 +706,6 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 			dropzoneElement?.removeEventListener('dragleave', onDragLeave);
 		}
 	});
-
-	import NotePanel from '$lib/components/notes/NotePanel.svelte';
-	import { PaneGroup, Pane, PaneResizer } from 'paneforge';
-	import XMark from '../icons/XMark.svelte';
-	import MenuLines from '../icons/MenuLines.svelte';
-	import ChatBubbleOval from '../icons/ChatBubbleOval.svelte';
-	import Settings from './NoteEditor/Settings.svelte';
-	import Chat from './NoteEditor/Chat.svelte';
 </script>
 
 <FilesOverlay show={dragged} />
@@ -708,7 +724,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 </DeleteConfirmDialog>
 
 <PaneGroup direction="horizontal" class="w-full h-full">
-	<Pane defaultSize={70} minSize={50} class="h-full flex flex-col w-full relative">
+	<Pane defaultSize={70} minSize={30} class="h-full flex flex-col w-full relative">
 		<div class="relative flex-1 w-full h-full flex justify-center pt-[11px]" id="note-editor">
 			{#if loading}
 				<div class=" absolute top-0 bottom-0 left-0 right-0 flex">
@@ -1018,22 +1034,28 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 				</Tooltip> -->
 
 						<Tooltip content={$i18n.t('Enhance')} placement="top">
-							<button
-								class="{enhancing
-									? 'p-2'
-									: 'p-2.5'} flex justify-center items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition shrink-0"
-								on:click={() => {
-									enhanceNoteHandler();
-								}}
-								disabled={enhancing}
-								type="button"
-							>
-								{#if enhancing}
+							{#if enhancing}
+								<button
+									class="p-2 flex justify-center items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition shrink-0"
+									on:click={() => {
+										stopResponseHandler();
+									}}
+									type="button"
+								>
 									<Spinner className="size-5" />
-								{:else}
+								</button>
+							{:else}
+								<button
+									class="p-2.5 flex justify-center items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition shrink-0"
+									on:click={() => {
+										enhanceNoteHandler();
+									}}
+									disabled={enhancing}
+									type="button"
+								>
 									<SparklesSolid />
-								{/if}
-							</button>
+								</button>
+							{/if}
 						</Tooltip>
 					</div>
 				{/if}
@@ -1046,9 +1068,14 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 				bind:show={showPanel}
 				bind:selectedModelId
 				bind:messages
+				bind:note
+				bind:enhancing
+				bind:streaming
+				bind:stopResponseFlag
 				{files}
-				{note}
 				onInsert={insertHandler}
+				onStop={stopResponseHandler}
+				scrollToBottomHandler={scrollToBottom}
 			/>
 		{:else if selectedPanel === 'settings'}
 			<Settings bind:show={showPanel} bind:selectedModelId />

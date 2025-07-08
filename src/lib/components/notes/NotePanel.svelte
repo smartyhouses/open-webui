@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { Pane, PaneResizer } from 'paneforge';
 
 	import Drawer from '../common/Drawer.svelte';
@@ -46,11 +46,11 @@
 				// set the minSize to the percentage, must be an integer
 				minSize = Math.floor(percentage);
 
-				// if ($showControls) {
-				// 	if (pane && pane.isExpanded() && pane.getSize() < minSize) {
-				// 		pane.resize(minSize);
-				// 	}
-				// }
+				if (show) {
+					if (pane && pane.isExpanded() && pane.getSize() < minSize) {
+						pane.resize(minSize);
+					}
+				}
 			}
 		});
 
@@ -87,7 +87,7 @@
 
 	<Pane
 		bind:pane
-		defaultSize={20}
+		defaultSize={Math.max(20, minSize)}
 		{minSize}
 		onCollapse={() => {
 			show = false;
