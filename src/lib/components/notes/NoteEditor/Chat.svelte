@@ -3,6 +3,33 @@
 	export let selectedModelId = '';
 
 	import { marked } from 'marked';
+	// Configure marked with extensions
+	marked.use({
+		breaks: true,
+		gfm: true,
+		renderer: {
+			list(body, ordered, start) {
+				const isTaskList = body.includes('data-checked=');
+
+				if (isTaskList) {
+					return `<ul data-type="taskList">${body}</ul>`;
+				}
+
+				const type = ordered ? 'ol' : 'ul';
+				const startatt = ordered && start !== 1 ? ` start="${start}"` : '';
+				return `<${type}${startatt}>${body}</${type}>`;
+			},
+
+			listitem(text, task, checked) {
+				if (task) {
+					const checkedAttr = checked ? 'true' : 'false';
+					return `<li data-type="taskItem" data-checked="${checkedAttr}">${text}</li>`;
+				}
+				return `<li>${text}</li>`;
+			}
+		}
+	});
+
 	import { toast } from 'svelte-sonner';
 
 	import { goto } from '$app/navigation';
@@ -52,7 +79,6 @@
 
 	let system = '';
 	let editorEnabled = false;
-
 	let chatInputElement = null;
 
 	const DEFAULT_DOCUMENT_EDITOR_PROMPT = `You are an expert document editor.
@@ -284,6 +310,8 @@ Based on the user's instruction, update and enhance the existing notes by incorp
 			selectedModelId = '';
 		}
 
+		editorEnabled = localStorage.getItem('noteEditorEnabled') === 'true';
+
 		loaded = true;
 
 		await tick();
@@ -344,6 +372,7 @@ Based on the user's instruction, update and enhance the existing notes by incorp
 						bind:chatInputElement
 						acceptFiles={false}
 						inputLoading={loading}
+						showFormattingButtons={false}
 						onSubmit={submitHandler}
 						{onStop}
 					>
@@ -351,7 +380,11 @@ Based on the user's instruction, update and enhance the existing notes by incorp
 							<div>
 								<Tooltip content={$i18n.t('Edit')} placement="top">
 									<button
-										on:click|preventDefault={() => (editorEnabled = !editorEnabled)}
+										on:click|preventDefault={() => {
+											editorEnabled = !editorEnabled;
+
+											localStorage.setItem('noteEditorEnabled', editorEnabled ? 'true' : 'false');
+										}}
 										type="button"
 										class="px-2 @xl:px-2.5 py-2 flex gap-1.5 items-center text-sm rounded-full transition-colors duration-300 focus:outline-hidden max-w-full overflow-hidden hover:bg-gray-50 dark:hover:bg-gray-800 {editorEnabled
 											? ' text-sky-500 dark:text-sky-300 bg-sky-50 dark:bg-sky-200/5'

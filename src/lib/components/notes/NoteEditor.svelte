@@ -82,6 +82,7 @@
 
 	export let id: null | string = null;
 
+	let editor = null;
 	let note = null;
 
 	const newNote = {
@@ -102,6 +103,9 @@
 
 	let files = [];
 	let messages = [];
+
+	let wordCount = 0;
+	let charCount = 0;
 
 	let versionIdx = null;
 	let selectedModelId = null;
@@ -872,6 +876,21 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 
 								<span> You </span>
 							</button>
+
+							{#if editor}
+								<div class="flex items-center gap-1 px-1">
+									<div>
+										{$i18n.t('{{count}} words', {
+											count: wordCount
+										})}
+									</div>
+									<div>
+										{$i18n.t('{{count}} characters', {
+											count: charCount
+										})}
+									</div>
+								</div>
+							{/if}
 						</div>
 					</div>
 
@@ -923,6 +942,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 
 						<RichTextInput
 							bind:this={inputElement}
+							bind:editor
 							className="input-prose-sm px-0.5"
 							bind:value={note.data.content.json}
 							html={note.data?.content?.html}
@@ -932,6 +952,11 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 							onChange={(content) => {
 								note.data.content.html = content.html;
 								note.data.content.md = content.md;
+
+								if (editor) {
+									wordCount = editor.storage.characterCount.words();
+									charCount = editor.storage.characterCount.characters();
+								}
 							}}
 						/>
 					</div>

@@ -1,5 +1,30 @@
 <script lang="ts">
 	import { marked } from 'marked';
+	marked.use({
+		breaks: true,
+		gfm: true,
+		renderer: {
+			list(body, ordered, start) {
+				const isTaskList = body.includes('data-checked=');
+
+				if (isTaskList) {
+					return `<ul data-type="taskList">${body}</ul>`;
+				}
+
+				const type = ordered ? 'ol' : 'ul';
+				const startatt = ordered && start !== 1 ? ` start="${start}"` : '';
+				return `<${type}${startatt}>${body}</${type}>`;
+			},
+
+			listitem(text, task, checked) {
+				if (task) {
+					const checkedAttr = checked ? 'true' : 'false';
+					return `<li data-type="taskItem" data-checked="${checkedAttr}">${text}</li>`;
+				}
+				return `<li>${text}</li>`;
+			}
+		}
+	});
 
 	import TurndownService from 'turndown';
 	import { gfm } from 'turndown-plugin-gfm';
@@ -23,9 +48,10 @@
 		}
 	});
 
-	import { onMount, onDestroy, tick } from 'svelte';
+	import { onMount, onDestroy, tick, getContext } from 'svelte';
 	import { createEventDispatcher } from 'svelte';
 
+	const i18n = getContext('i18n');
 	const eventDispatch = createEventDispatcher();
 
 	import { Fragment, DOMParser } from 'prosemirror-model';
@@ -39,17 +65,27 @@
 	import TableHeader from '@tiptap/extension-table-header';
 	import TableCell from '@tiptap/extension-table-cell';
 
+	import Link from '@tiptap/extension-link';
+	import Underline from '@tiptap/extension-underline';
 	import TaskItem from '@tiptap/extension-task-item';
 	import TaskList from '@tiptap/extension-task-list';
+
+	import CharacterCount from '@tiptap/extension-character-count';
 
 	import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 	import Placeholder from '@tiptap/extension-placeholder';
 	import StarterKit from '@tiptap/starter-kit';
 	import Highlight from '@tiptap/extension-highlight';
 	import Typography from '@tiptap/extension-typography';
+
+	import BubbleMenu from '@tiptap/extension-bubble-menu';
+	import FloatingMenu from '@tiptap/extension-floating-menu';
+
 	import { all, createLowlight } from 'lowlight';
 
 	import { PASTED_TEXT_CHARACTER_LIMIT } from '$lib/constants';
+
+	import FormattingButtons from './RichTextInput/FormattingButtons.svelte';
 
 	export let oncompositionstart = (e) => {};
 	export let oncompositionend = (e) => {};
@@ -57,6 +93,8 @@
 
 	// create a lowlight instance with all languages loaded
 	const lowlight = createLowlight(all);
+
+	export let editor = null;
 
 	export let className = 'input-prose';
 	export let placeholder = 'Type here...';
@@ -69,6 +107,8 @@
 	export let raw = false;
 	export let editable = true;
 
+	export let showFormattingButtons = true;
+
 	export let preserveBreaks = false;
 	export let generateAutoCompletion: Function = async () => null;
 	export let autocomplete = false;
@@ -77,8 +117,9 @@
 	export let largeTextAsFile = false;
 	export let insertPromptAsRichText = false;
 
+	let floatingMenuElement = null;
+	let bubbleMenuElement = null;
 	let element;
-	let editor;
 
 	const options = {
 		throwOnError: false
@@ -260,10 +301,7 @@
 		const { schema, tr } = state;
 
 		// If content is a string, convert it to a ProseMirror node
-		const htmlContent = marked.parse(content, {
-			breaks: true,
-			gfm: true
-		});
+		const htmlContent = marked.parse(content);
 
 		// insert the HTML content at the current selection
 		editor.commands.insertContent(htmlContent);
@@ -447,6 +485,11 @@
 				}),
 				Highlight,
 				Typography,
+				Underline,
+				Link.configure({
+					openOnClick: true,
+					linkOnPaste: true
+				}),
 				Placeholder.configure({ placeholder }),
 				Table.configure({ resizable: true }),
 				TableRow,
@@ -455,6 +498,9 @@
 				TaskList,
 				TaskItem.configure({
 					nested: true
+				}),
+				CharacterCount.configure({
+					mode: 'nodeSize'
 				}),
 				...(autocomplete
 					? [
@@ -470,6 +516,31 @@
 									}
 
 									return suggestion;
+								}
+							})
+						]
+					: []),
+
+				...(showFormattingButtons
+					? [
+							BubbleMenu.configure({
+								element: bubbleMenuElement,
+								tippyOptions: {
+									duration: 100,
+									arrow: false,
+									placement: 'top',
+									theme: 'transparent',
+									offset: [0, 2]
+								}
+							}),
+							FloatingMenu.configure({
+								element: floatingMenuElement,
+								tippyOptions: {
+									duration: 100,
+									arrow: false,
+									placement: 'top-start',
+									theme: 'transparent',
+									offset: [-10, 2]
 								}
 							})
 						]
@@ -737,5 +808,15 @@
 		}
 	};
 </script>
+
+{#if showFormattingButtons}
+	<div bind:this={bubbleMenuElement} class="p-0">
+		<FormattingButtons {editor} />
+	</div>
+
+	<div bind:this={floatingMenuElement} class="p-0">
+		<FormattingButtons {editor} />
+	</div>
+{/if}
 
 <div bind:this={element} class="relative w-full min-w-full h-full min-h-fit {className}" />
