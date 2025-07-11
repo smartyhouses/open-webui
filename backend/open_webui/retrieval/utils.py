@@ -18,9 +18,11 @@ from open_webui.retrieval.vector.factory import VECTOR_DB_CLIENT
 
 from open_webui.models.users import UserModel
 from open_webui.models.files import Files
+from open_webui.models.knowledge import Knowledges
 from open_webui.models.notes import Notes
 
 from open_webui.retrieval.vector.main import GetResult
+from open_webui.utils.access_control import has_access
 
 
 from open_webui.env import (
@@ -443,9 +445,9 @@ def get_embedding_function(
         raise ValueError(f"Unknown embedding engine: {embedding_engine}")
 
 
-def get_sources_from_files(
+def get_sources_from_items(
     request,
-    files,
+    items,
     queries,
     embedding_function,
     k,
@@ -455,193 +457,193 @@ def get_sources_from_files(
     hybrid_bm25_weight,
     hybrid_search,
     full_context=False,
+    user: Optional[UserModel] = None,
 ):
     log.debug(
-        f"files: {files} {queries} {embedding_function} {reranking_function} {full_context}"
+        f"items: {items} {queries} {embedding_function} {reranking_function} {full_context}"
     )
 
     extracted_collections = []
     query_results = []
 
-    for file in files:
+    for item in items:
         query_result = None
-        if file.get("docs"):
-            # BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL
-            query_result = {
-                "documents": [[doc.get("content") for doc in file.get("docs")]],
-                "metadatas": [[doc.get("metadata") for doc in file.get("docs")]],
-            }
-        elif file.get("type") == "text":
-            # Text File
-            query_result = {
-                "documents": [[file.get("content")]],
-                "metadatas": [[{"file_id": file.get("id"), "name": file.get("name")}]],
-            }
-        elif file.get("type") == "note":
-            # Note Attached
-            note = Notes.get_note_by_id(file.get("id"))
+        collection_names = []
 
-            query_result = {
-                "documents": [[note.data.get("content", {}).get("md", "")]],
-                "metadatas": [[{"file_id": note.id, "name": note.title}]],
-            }
-        elif file.get("context") == "full":
-            if file.get("type") == "file":
-                # Manual Full Mode Toggle
+        if item.get("type") == "text":
+            # Raw Text
+            # Used during temporary chat file uploads
+
+            if item.get("file"):
+                # if item has file data, use it
                 query_result = {
-                    "documents": [[file.get("file").get("data", {}).get("content")]],
+                    "documents": [[item.get("file").get("data", {}).get("content")]],
+                    "metadatas": [[item.get("file").get("data", {}).get("meta", {})]],
+                }
+            else:
+                # Fallback to item content
+                query_result = {
+                    "documents": [[item.get("content")]],
                     "metadatas": [
-                        [{"file_id": file.get("id"), "name": file.get("name")}]
+                        [{"file_id": item.get("id"), "name": item.get("name")}]
                     ],
                 }
-            elif file.get("type") == "collection":
-                # Manual Full Mode Toggle for Collection
-                file_ids = file.get("data", {}).get("file_ids", [])
 
-                documents = []
-                metadatas = []
-                for file_id in file_ids:
-                    file_object = Files.get_file_by_id(file_id)
+        elif item.get("type") == "note":
+            # Note Attached
+            note = Notes.get_note_by_id(item.get("id"))
 
-                    if file_object:
-                        documents.append(file_object.data.get("content", ""))
-                        metadatas.append(
-                            {
-                                "file_id": file_id,
-                                "name": file_object.filename,
-                                "source": file_object.filename,
-                            }
-                        )
-
+            if user.role == "admin" or has_access(user.id, "read", note.access_control):
+                # User has access to the note
                 query_result = {
-                    "documents": [documents],
-                    "metadatas": [metadatas],
-                }
-        elif (
-            file.get("type") != "web_search"
-            and request.app.state.config.BYPASS_EMBEDDING_AND_RETRIEVAL
-        ):
-            # BYPASS_EMBEDDING_AND_RETRIEVAL
-            if file.get("type") == "collection":
-                file_ids = file.get("data", {}).get("file_ids", [])
-
-                documents = []
-                metadatas = []
-                for file_id in file_ids:
-                    file_object = Files.get_file_by_id(file_id)
-
-                    if file_object:
-                        documents.append(file_object.data.get("content", ""))
-                        metadatas.append(
-                            {
-                                "file_id": file_id,
-                                "name": file_object.filename,
-                                "source": file_object.filename,
-                            }
-                        )
-
-                query_result = {
-                    "documents": [documents],
-                    "metadatas": [metadatas],
+                    "documents": [[note.data.get("content", {}).get("md", "")]],
+                    "metadatas": [[{"file_id": note.id, "name": note.title}]],
                 }
 
-            elif file.get("id"):
-                file_object = Files.get_file_by_id(file.get("id"))
-                if file_object:
+        elif item.get("type") == "file":
+            if (
+                item.get("context") == "full"
+                or request.app.state.config.BYPASS_EMBEDDING_AND_RETRIEVAL
+            ):
+                if item.get("file").get("data", {}):
+                    # Manual Full Mode Toggle
+                    # Used from chat file modal, we can assume that the file content will be available from item.get("file").get("data", {}).get("content")
                     query_result = {
-                        "documents": [[file_object.data.get("content", "")]],
+                        "documents": [
+                            [item.get("file").get("data", {}).get("content", "")]
+                        ],
                         "metadatas": [
                             [
                                 {
-                                    "file_id": file.get("id"),
-                                    "name": file_object.filename,
-                                    "source": file_object.filename,
+                                    "file_id": item.get("id"),
+                                    "name": item.get("name"),
+                                    **item.get("file")
+                                    .get("data", {})
+                                    .get("metadata", {}),
                                 }
                             ]
                         ],
                     }
-            elif file.get("file").get("data"):
-                query_result = {
-                    "documents": [[file.get("file").get("data", {}).get("content")]],
-                    "metadatas": [
-                        [file.get("file").get("data", {}).get("metadata", {})]
-                    ],
-                }
-        else:
-            collection_names = []
-            if file.get("type") == "collection":
-                if file.get("legacy"):
-                    collection_names = file.get("collection_names", [])
-                else:
-                    collection_names.append(file["id"])
-            elif file.get("collection_name"):
-                collection_names.append(file["collection_name"])
-            elif file.get("id"):
-                if file.get("legacy"):
-                    collection_names.append(f"{file['id']}")
-                else:
-                    collection_names.append(f"file-{file['id']}")
-
-            collection_names = set(collection_names).difference(extracted_collections)
-            if not collection_names:
-                log.debug(f"skipping {file} as it has already been extracted")
-                continue
-
-            if full_context:
-                try:
-                    query_result = get_all_items_from_collections(collection_names)
-                except Exception as e:
-                    log.exception(e)
-
-            else:
-                try:
-                    query_result = None
-                    if file.get("type") == "text":
-                        # Not sure when this is used, but it seems to be a fallback
+                elif item.get("id"):
+                    file_object = Files.get_file_by_id(item.get("id"))
+                    if file_object:
                         query_result = {
-                            "documents": [
-                                [file.get("file").get("data", {}).get("content")]
-                            ],
+                            "documents": [[file_object.data.get("content", "")]],
                             "metadatas": [
-                                [file.get("file").get("data", {}).get("meta", {})]
+                                [
+                                    {
+                                        "file_id": item.get("id"),
+                                        "name": file_object.filename,
+                                        "source": file_object.filename,
+                                    }
+                                ]
                             ],
                         }
-                    else:
-                        if hybrid_search:
-                            try:
-                                query_result = query_collection_with_hybrid_search(
-                                    collection_names=collection_names,
-                                    queries=queries,
-                                    embedding_function=embedding_function,
-                                    k=k,
-                                    reranking_function=reranking_function,
-                                    k_reranker=k_reranker,
-                                    r=r,
-                                    hybrid_bm25_weight=hybrid_bm25_weight,
-                                )
-                            except Exception as e:
-                                log.debug(
-                                    "Error when using hybrid search, using"
-                                    " non hybrid search as fallback."
-                                )
+            else:
+                # Fallback to collection names
+                if item.get("legacy"):
+                    collection_names.append(f"{item['id']}")
+                else:
+                    collection_names.append(f"file-{item['id']}")
 
-                        if (not hybrid_search) or (query_result is None):
-                            query_result = query_collection(
+        elif item.get("type") == "collection":
+            if (
+                item.get("context") == "full"
+                or request.app.state.config.BYPASS_EMBEDDING_AND_RETRIEVAL
+            ):
+                # Manual Full Mode Toggle for Collection
+                knowledge_base = Knowledges.get_knowledge_by_id(item.get("id"))
+
+                if knowledge_base and (
+                    user.role == "admin"
+                    or has_access(user.id, "read", knowledge_base.access_control)
+                ):
+
+                    file_ids = knowledge_base.data.get("file_ids", [])
+
+                    documents = []
+                    metadatas = []
+                    for file_id in file_ids:
+                        file_object = Files.get_file_by_id(file_id)
+
+                        if file_object:
+                            documents.append(file_object.data.get("content", ""))
+                            metadatas.append(
+                                {
+                                    "file_id": file_id,
+                                    "name": file_object.filename,
+                                    "source": file_object.filename,
+                                }
+                            )
+
+                    query_result = {
+                        "documents": [documents],
+                        "metadatas": [metadatas],
+                    }
+            else:
+                # Fallback to collection names
+                if item.get("legacy"):
+                    collection_names = item.get("collection_names", [])
+                else:
+                    collection_names.append(item["id"])
+
+        elif item.get("docs"):
+            # BYPASS_WEB_SEARCH_EMBEDDING_AND_RETRIEVAL
+            query_result = {
+                "documents": [[doc.get("content") for doc in item.get("docs")]],
+                "metadatas": [[doc.get("metadata") for doc in item.get("docs")]],
+            }
+        elif item.get("collection_name"):
+            # Direct Collection Name
+            collection_names.append(item["collection_name"])
+
+        # If query_result is None
+        # Fallback to collection names and vector search the collections
+        if query_result is None and collection_names:
+            collection_names = set(collection_names).difference(extracted_collections)
+            if not collection_names:
+                log.debug(f"skipping {item} as it has already been extracted")
+                continue
+
+            try:
+                if full_context:
+                    query_result = get_all_items_from_collections(collection_names)
+                else:
+                    query_result = None  # Initialize to None
+                    if hybrid_search:
+                        try:
+                            query_result = query_collection_with_hybrid_search(
                                 collection_names=collection_names,
                                 queries=queries,
                                 embedding_function=embedding_function,
                                 k=k,
+                                reranking_function=reranking_function,
+                                k_reranker=k_reranker,
+                                r=r,
+                                hybrid_bm25_weight=hybrid_bm25_weight,
                             )
-                except Exception as e:
-                    log.exception(e)
+                        except Exception as e:
+                            log.debug(
+                                "Error when using hybrid search, using non hybrid search as fallback."
+                            )
+
+                    # fallback to non-hybrid search
+                    if not hybrid_search and query_result is None:
+                        query_result = query_collection(
+                            collection_names=collection_names,
+                            queries=queries,
+                            embedding_function=embedding_function,
+                            k=k,
+                        )
+            except Exception as e:
+                log.exception(e)
 
             extracted_collections.extend(collection_names)
 
         if query_result:
-            if "data" in file:
-                del file["data"]
-
-            query_results.append({**query_result, "file": file})
+            if "data" in item:
+                del item["data"]
+            query_results.append({**query_result, "file": item})
 
     sources = []
     for query_result in query_results:

@@ -56,10 +56,13 @@
 
 	import { Fragment, DOMParser } from 'prosemirror-model';
 	import { EditorState, Plugin, PluginKey, TextSelection, Selection } from 'prosemirror-state';
+	import { receiveTransaction, sendableSteps, getVersion } from 'prosemirror-collab';
+	import { Step } from 'prosemirror-transform';
 	import { Decoration, DecorationSet } from 'prosemirror-view';
-	import { Editor } from '@tiptap/core';
+	import { Editor, Extension } from '@tiptap/core';
 
 	import { AIAutocompletion } from './RichTextInput/AutoCompletion.js';
+	import History from '@tiptap/extension-history';
 	import Table from '@tiptap/extension-table';
 	import TableRow from '@tiptap/extension-table-row';
 	import TableHeader from '@tiptap/extension-table-header';
@@ -96,6 +99,10 @@
 
 	export let editor = null;
 
+	export let socket = null;
+	export let user = null;
+	export let documentId = '';
+
 	export let className = 'input-prose';
 	export let placeholder = 'Type here...';
 	export let link = false;
@@ -107,6 +114,7 @@
 	export let json = false;
 	export let raw = false;
 	export let editable = true;
+	export let collaboration = false;
 
 	export let showFormattingButtons = true;
 
@@ -117,6 +125,100 @@
 	export let shiftEnter = false;
 	export let largeTextAsFile = false;
 	export let insertPromptAsRichText = false;
+
+	let isConnected = false;
+	let collaborators = new Map();
+	let version = 0;
+
+	// Custom collaboration plugin
+	const collaborationPlugin = () => {
+		return new Plugin({
+			key: new PluginKey('collaboration'),
+			state: {
+				init: () => ({ version: 0 }),
+				apply: (tr, pluginState) => {
+					const newState = { ...pluginState };
+
+					if (tr.getMeta('collaboration')) {
+						newState.version = tr.getMeta('collaboration').version;
+					}
+
+					return newState;
+				}
+			},
+			view: () => ({
+				update: (view, prevState) => {
+					const sendable = sendableSteps(view.state);
+					if (sendable) {
+						socket.emit('document_steps', {
+							document_id: documentId,
+							user_id: user?.id,
+							version: sendable.version,
+							steps: sendable.steps.map((step) => step.toJSON()),
+							clientID: sendable.clientID
+						});
+					}
+				}
+			})
+		});
+	};
+
+	function initializeCollaboration() {
+		if (!socket || !user || !documentId) {
+			console.warn('Collaboration not initialized: missing socket, user, or documentId');
+			return;
+		}
+
+		socket.emit('join_document', {
+			document_id: documentId,
+			user_id: user?.id,
+			user_name: user?.name,
+			user_color: user?.color
+		});
+
+		socket.on('document_steps', handleDocumentSteps);
+		socket.on('document_state', handleDocumentState);
+		socket.on('user_joined', handleUserJoined);
+		socket.on('user_left', handleUserLeft);
+		socket.on('connect', () => {
+			isConnected = true;
+		});
+		socket.on('disconnect', () => {
+			isConnected = false;
+		});
+	}
+
+	function handleDocumentSteps(data) {
+		if (data.user_id !== user?.id && editor) {
+			const steps = data.steps.map((stepJSON) => Step.fromJSON(editor.schema, stepJSON));
+			const tr = receiveTransaction(editor.state, steps, data.clientID);
+
+			if (tr) {
+				editor.view.dispatch(tr);
+			}
+		}
+	}
+
+	function handleDocumentState(data) {
+		version = data.version;
+		if (data.content && editor) {
+			editor.commands.setContent(data.content);
+		}
+		isConnected = true;
+	}
+
+	function handleUserJoined(data) {
+		collaborators.set(data.user_id, {
+			name: data.user_name,
+			color: data.user_color
+		});
+		collaborators = collaborators;
+	}
+
+	function handleUserLeft(data) {
+		collaborators.delete(data.user_id);
+		collaborators = collaborators;
+	}
 
 	let floatingMenuElement = null;
 	let bubbleMenuElement = null;
@@ -477,6 +579,10 @@
 
 		console.log('content', content);
 
+		if (collaboration) {
+			initializeCollaboration();
+		}
+
 		editor = new Editor({
 			element: element,
 			extensions: [
@@ -545,6 +651,17 @@
 									placement: 'bottom-start',
 									theme: 'transparent',
 									offset: [-12, 4]
+								}
+							})
+						]
+					: []),
+
+				...(collaboration
+					? [
+							Extension.create({
+								name: 'socketCollaboration',
+								addProseMirrorPlugins() {
+									return [collaborationPlugin()];
 								}
 							})
 						]
@@ -755,6 +872,18 @@
 	});
 
 	onDestroy(() => {
+		if (socket) {
+			socket.off('document_steps', handleDocumentSteps);
+			socket.off('document_state', handleDocumentState);
+			socket.off('user_joined', handleUserJoined);
+			socket.off('user_left', handleUserLeft);
+
+			socket.emit('leave_document', {
+				document_id: documentId,
+				user_id: userId
+			});
+		}
+
 		if (editor) {
 			editor.destroy();
 		}
