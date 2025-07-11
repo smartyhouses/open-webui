@@ -123,7 +123,7 @@
 	let dragged = false;
 	let loading = false;
 
-	let enhancing = false;
+	let editing = false;
 	let streaming = false;
 
 	let stopResponseFlag = false;
@@ -190,6 +190,11 @@
 		return false;
 	}
 
+	const onEdited = async () => {
+		if (!editor) return;
+		editor.commands.setContent(note.data.content.html);
+	};
+
 	async function enhanceNoteHandler() {
 		if (selectedModelId === '') {
 			toast.error($i18n.t('Please select a model.'));
@@ -205,12 +210,11 @@
 			return;
 		}
 
-		enhancing = true;
-
-		insertNoteVersion(note);
+		editing = true;
 		await enhanceCompletionHandler(model);
+		editing = false;
 
-		enhancing = false;
+		onEdited();
 		versionIdx = null;
 	}
 
@@ -536,6 +540,7 @@
 	};
 
 	const enhanceCompletionHandler = async (model) => {
+		stopResponseFlag = false;
 		let enhancedContent = {
 			json: null,
 			html: '',
@@ -591,7 +596,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 						controller.abort('User: Stop Response');
 					}
 
-					enhancing = false;
+					editing = false;
 					streaming = false;
 					break;
 				}
@@ -927,10 +932,10 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 					</div>
 
 					<div
-						class=" flex-1 w-full h-full overflow-auto px-3.5 pb-20 relative z-40 pt-2.5"
+						class=" flex-1 w-full h-full overflow-auto px-3.5 pb-20 relative pt-2.5"
 						id="note-content-container"
 					>
-						{#if enhancing}
+						{#if editing}
 							<div
 								class="w-full h-full fixed top-0 left-0 {streaming
 									? ''
@@ -976,16 +981,16 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 							bind:this={inputElement}
 							bind:editor
 							className="input-prose-sm px-0.5"
+							json={true}
 							bind:value={note.data.content.json}
 							html={note.data?.content?.html}
-							json={true}
-							link={true}
 							documentId={`note:${note.id}`}
 							collaboration={true}
 							socket={$socket}
 							user={$user}
+							link={true}
 							placeholder={$i18n.t('Write something...')}
-							editable={versionIdx === null && !enhancing}
+							editable={versionIdx === null && !editing}
 							onChange={(content) => {
 								note.data.content.html = content.html;
 								note.data.content.md = content.md;
@@ -1100,7 +1105,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 				</Tooltip> -->
 
 						<Tooltip content={$i18n.t('Enhance')} placement="top">
-							{#if enhancing}
+							{#if editing}
 								<button
 									class="p-2 flex justify-center items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full transition shrink-0"
 									on:click={() => {
@@ -1116,7 +1121,7 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 									on:click={() => {
 										enhanceNoteHandler();
 									}}
-									disabled={enhancing}
+									disabled={editing}
 									type="button"
 								>
 									<SparklesSolid />
@@ -1135,12 +1140,13 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 				bind:selectedModelId
 				bind:messages
 				bind:note
-				bind:enhancing
+				bind:editing
 				bind:streaming
 				bind:stopResponseFlag
 				{files}
 				onInsert={insertHandler}
 				onStop={stopResponseHandler}
+				{onEdited}
 				insertNoteHandler={() => {
 					insertNoteVersion(note);
 				}}
