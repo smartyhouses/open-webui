@@ -31,7 +31,7 @@
 	import { uploadFile } from '$lib/apis/files';
 	import { chatCompletion, generateOpenAIChatCompletion } from '$lib/apis/openai';
 
-	import { config, models, settings, showSidebar, socket, user } from '$lib/stores';
+	import { config, models, settings, showSidebar, socket, user, WEBUI_NAME } from '$lib/stores';
 
 	import NotePanel from '$lib/components/notes/NotePanel.svelte';
 	import MenuLines from '../icons/MenuLines.svelte';
@@ -626,7 +626,7 @@ ${content}
 			md: ''
 		};
 
-		const systemPrompt = `Enhance existing notes using additional context provided from audio transcription or uploaded file content. Your task is to make the notes more useful and comprehensive by incorporating relevant information from the provided context.
+		const systemPrompt = `Enhance existing notes using additional context provided from audio transcription or uploaded file content in the content's primary language. Your task is to make the notes more useful and comprehensive by incorporating relevant information from the provided context.
 
 Input will be provided within <notes> and <context> XML tags, providing a structure for the existing notes and context respectively.
 
@@ -791,6 +791,14 @@ Provide the enhanced notes in markdown format. Use markdown syntax for headings,
 		}
 	});
 </script>
+
+<svelte:head>
+	<title>
+		{note?.title
+			? `${note?.title.length > 30 ? `${note?.title.slice(0, 30)}...` : note?.title} • ${$WEBUI_NAME}`
+			: `${$WEBUI_NAME}`}
+	</title>
+</svelte:head>
 
 {#if note}
 	<AccessControlModal
