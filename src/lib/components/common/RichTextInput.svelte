@@ -134,6 +134,7 @@
 	export let shiftEnter = false;
 	export let largeTextAsFile = false;
 	export let insertPromptAsRichText = false;
+	export let floatingMenuPlacement = 'bottom-start';
 
 	let content = null;
 	let htmlValue = '';
@@ -176,7 +177,7 @@
 
 		joinDocument() {
 			const userColor = this.generateUserColor();
-			this.socket.emit('yjs:document:join', {
+			this.socket.emit('ydoc:document:join', {
 				document_id: this.documentId,
 				user_id: this.user?.id,
 				user_name: this.user?.name,
@@ -195,7 +196,7 @@
 
 		setupEventListeners() {
 			// Listen for document updates from server
-			this.socket.on('yjs:document:update', (data) => {
+			this.socket.on('ydoc:document:update', (data) => {
 				if (data.document_id === this.documentId && data.socket_id !== this.socket.id) {
 					try {
 						const update = new Uint8Array(data.update);
@@ -207,7 +208,7 @@
 			});
 
 			// Listen for document state from server
-			this.socket.on('yjs:document:state', async (data) => {
+			this.socket.on('ydoc:document:state', async (data) => {
 				if (data.document_id === this.documentId) {
 					try {
 						if (data.state) {
@@ -217,25 +218,30 @@
 								// Empty state, check if we have content to initialize
 								// check if editor empty as well
 								const isEmptyEditor = !editor || editor.getText().trim() === '';
-								if (content && isEmptyEditor) {
-									const pydoc = prosemirrorJSONToYDoc(editor.schema, content);
-									if (pydoc) {
-										Y.applyUpdate(this.doc, Y.encodeStateAsUpdate(pydoc));
+								if (content && isEmptyEditor && (data?.sessions ?? ['']).length === 1) {
+									const editorYdoc = prosemirrorJSONToYDoc(editor.schema, content);
+									if (editorYdoc) {
+										Y.applyUpdate(this.doc, Y.encodeStateAsUpdate(editorYdoc));
 									}
 								}
 							} else {
-								Y.applyUpdate(this.doc, state);
+								Y.applyUpdate(this.doc, state, 'server');
 							}
 						}
 						this.synced = true;
 					} catch (error) {
 						console.error('Error applying Yjs state:', error);
+
+						this.synced = false;
+						this.socket.emit('ydoc:document:state', {
+							document_id: this.documentId
+						});
 					}
 				}
 			});
 
 			// Listen for awareness updates
-			this.socket.on('yjs:awareness:update', (data) => {
+			this.socket.on('ydoc:awareness:update', (data) => {
 				if (data.document_id === this.documentId && awareness) {
 					try {
 						const awarenessUpdate = new Uint8Array(data.update);
@@ -254,7 +260,7 @@
 			this.doc.on('update', async (update, origin) => {
 				if (origin !== 'server' && this.isConnected) {
 					await tick(); // Ensure the DOM is updated before sending
-					this.socket.emit('yjs:document:update', {
+					this.socket.emit('ydoc:document:update', {
 						document_id: this.documentId,
 						user_id: this.user?.id,
 						socket_id: this.socket.id,
@@ -276,7 +282,7 @@
 					if (origin !== 'server' && this.isConnected) {
 						const changedClients = added.concat(updated).concat(removed);
 						const awarenessUpdate = awareness.encodeUpdate(changedClients);
-						this.socket.emit('yjs:awareness:update', {
+						this.socket.emit('ydoc:awareness:update', {
 							document_id: this.documentId,
 							user_id: this.socket.id,
 							update: Array.from(awarenessUpdate)
@@ -302,14 +308,14 @@
 		};
 
 		destroy() {
-			this.socket.off('yjs:document:update');
-			this.socket.off('yjs:document:state');
-			this.socket.off('yjs:awareness:update');
+			this.socket.off('ydoc:document:update');
+			this.socket.off('ydoc:document:state');
+			this.socket.off('ydoc:awareness:update');
 			this.socket.off('connect', this.onConnect);
 			this.socket.off('disconnect', this.onDisconnect);
 
 			if (this.isConnected) {
-				this.socket.emit('yjs:document:leave', {
+				this.socket.emit('ydoc:document:leave', {
 					document_id: this.documentId,
 					user_id: this.user?.id
 				});
@@ -853,7 +859,7 @@
 								tippyOptions: {
 									duration: 100,
 									arrow: false,
-									placement: 'bottom-start',
+									placement: floatingMenuPlacement,
 									theme: 'transparent',
 									offset: [-12, 4]
 								}
