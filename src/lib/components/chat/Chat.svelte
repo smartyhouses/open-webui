@@ -1352,6 +1352,12 @@
 			);
 
 			history.messages[message.id] = message;
+
+			await tick();
+			if (autoScroll) {
+				scrollToBottom();
+			}
+
 			await chatCompletedHandler(
 				chatId,
 				message.model,
@@ -1361,6 +1367,8 @@
 		}
 
 		console.log(data);
+		await tick();
+
 		if (autoScroll) {
 			scrollToBottom();
 		}
@@ -2123,6 +2131,9 @@
 										bind:history
 										bind:autoScroll
 										bind:prompt
+										setInputText={(text) => {
+											messageInput?.setText(text);
+										}}
 										{selectedModels}
 										{atSelectedModel}
 										{sendPrompt}
